@@ -38,4 +38,4 @@ Distances between the stations (miles):
 
 ### Screenshot
 
-![Simulation Map](../../../../holiu/Desktop/system-map.png)
+![Simulation Map](images/system-map.png)
