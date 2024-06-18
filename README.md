@@ -35,3 +35,7 @@ Distances between the stations (miles):
 - Woodlands to Limeridge: 2.5 miles
 - Limeridge to Sunvalley Shopping Center: 3.0 miles
 - Sunvalley Shopping Center to Broadway Plaza: 4.0 miles
+
+### Screenshot
+
+![Simulation Map](../../../../holiu/Desktop/system-map.png)
