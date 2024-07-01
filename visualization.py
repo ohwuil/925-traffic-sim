@@ -4,6 +4,7 @@ import folium
 import ipywidgets as widgets
 from IPython.display import display, clear_output, HTML
 from constants import STATION_COORDINATES
+from folium.plugins import AntPath
 
 map_widget = None
 
@@ -26,11 +27,8 @@ def update_map(visualization_data):
         folium.Marker(location=coords, popup=station, icon=folium.Icon(color='blue')).add_to(m)
     
     for data in visualization_data:
-        for i in range(len(data['path']) - 1):
-            folium.PolyLine(
-                locations=[STATION_COORDINATES[data['path'][i]], STATION_COORDINATES[data['path'][i+1]]],
-                color='red'
-            ).add_to(m)
+        path = [STATION_COORDINATES[point] for point in data['path']]
+        AntPath(locations=path, color='red', weight=5).add_to(m)
         folium.CircleMarker(location=STATION_COORDINATES[data['to_station']],
                             radius=5,
                             popup=f"Car: {data['car_id']}, Rider: {data['rider_id']}, Time: {data['time']}",
