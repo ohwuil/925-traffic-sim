@@ -24,13 +24,20 @@ let stations = [
   let minLat = 37.9161, maxLat = 38.0184;
   let minLon = -121.8971, maxLon = -121.6985;
   let mapWidth = 800, mapHeight = 600;
-  let numCars = 5;
-  let numRiders = 10;
-  let currentTime = 0; // in minutes, 0 to 1440 for 24 hours
-  let timeStep = 6; // 6 minutes per frame to simulate 24 hours in 5 minutes of real time
+  let numCars = 1;
+  let numRiders = 1;
+  let currentTime = 0; // in minutes, 0 to 720 for 12 hours (8am to 8pm)
+  let timeStep = 1.2; // 1.2 minutes per frame to simulate 12 hours in 10 minutes of real time
   let startTime = 8 * 60; // Start at 8:00 AM
   let simulationRunning = true;
-  let targetFrameRate = 30; // Target frame rate in frames per second
+  let targetFrameRate = 60; // Target frame rate in frames per second
+  
+  let carIcon = L.icon({
+    iconUrl: 'https://maps.google.com/mapfiles/ms/icons/cabs.png',
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32]
+  });
   
   function setup() {
     frameRate(targetFrameRate);
@@ -45,7 +52,17 @@ let stations = [
   
     // Add markers for stations
     for (let station of stations) {
-      L.marker([station.lat, station.lon]).addTo(myMap)
+      let markerColor = "blue";
+      if (station.name === "Brentwood Blvd & Sand Creek Rd" || station.name === "Main St & Norcross Ln") {
+        markerColor = "red";
+      }
+      let markerIcon = L.icon({
+        iconUrl: `https://maps.google.com/mapfiles/ms/icons/${markerColor}-dot.png`,
+        iconSize: [32, 32],
+        iconAnchor: [16, 32],
+        popupAnchor: [0, -32]
+      });
+      L.marker([station.lat, station.lon], { icon: markerIcon }).addTo(myMap)
         .bindPopup(station.name);
     }
   
@@ -58,7 +75,7 @@ let stations = [
   
       // Update current time
       currentTime += timeStep / targetFrameRate;
-      if (currentTime >= 1440) {
+      if (currentTime >= 720) {
         simulationRunning = false;
         noLoop();
       }
@@ -95,6 +112,11 @@ let stations = [
     return createVector(point.x, point.y);
   }
   
+  function mapCoordsToLatLng(vector) {
+    let latLng = myMap.layerPointToLatLng([vector.x, vector.y]);
+    return [latLng.lat, latLng.lng];
+  }
+  
   function updateOverlay() {
     let overlay = document.getElementById('overlay');
     let currentTimeStr = new Date((currentTime + startTime) * 60 * 1000).toISOString().substr(11, 5);
@@ -102,7 +124,7 @@ let stations = [
     for (let rider of riders) {
       overlayText += `Rider ${rider.id}: `;
       if (rider.inCar) {
-        overlayText += `Traveling to ${rider.endStation.name}<br>`;
+        overlayText += `Traveling to ${rider.endStation.name}, traveled ${(currentTime - rider.startTravelTime).toFixed(2)} minutes<br>`;
       } else {
         overlayText += `Waiting at ${rider.startStation.name} for ${(currentTime - rider.waitStartTime).toFixed(2)} minutes<br>`;
       }
@@ -127,18 +149,13 @@ let stations = [
     currentTime = 0;
     simulationRunning = true;
   
-    // Create cars at random stations
-    for (let i = 0; i < numCars; i++) {
-      let station = random(stations);
-      cars.push(new Car(i, station));
-    }
+    // Create one car at the start station
+    let startStation = stations.find(station => station.name === "Brentwood Blvd & Sand Creek Rd");
+    cars.push(new Car(0, startStation));
   
-    // Create riders at random stations with random destinations
-    for (let i = 0; i < numRiders; i++) {
-      let startStation = random(stations);
-      let endStation = random(stations.filter(station => station !== startStation));
-      riders.push(new Rider(i, startStation, endStation));
-    }
+    // Create one rider at the start station with a specific destination
+    let endStation = stations.find(station => station.name === "Main St & Norcross Ln");
+    riders.push(new Rider(0, startStation, endStation));
   }
   
   function restartSimulation() {
@@ -156,71 +173,67 @@ let stations = [
       this.speed = 2;
       this.moving = false;
       this.rider = null;
+      this.marker = L.marker(mapCoordsToLatLng(this.position), { icon: carIcon }).addTo(myMap);
     }
   
     assignRider(rider) {
       this.rider = rider;
       this.destinationStation = rider.endStation;
       rider.inCar = true;
+      rider.startTravelTime = currentTime; // Track the start of the travel time
       let endPos = mapCoordsToCanvas(this.destinationStation.lat, this.destinationStation.lon);
       this.direction = p5.Vector.sub(endPos, this.position).normalize().mult(this.speed);
       this.moving = true;
     }
   
     update() {
-        if (this.moving) {
-          this.position.add(this.direction);
-          let endPos = mapCoordsToCanvas(this.destinationStation.lat, this.destinationStation.lon);
-          if (p5.Vector.dist(this.position, endPos) < this.speed) {
-            this.position = endPos;
-            this.moving = false;
-            if (this.rider) {
-              this.rider.inCar = false;
-              this.rider = null;
-            }
-            this.currentStation = this.destinationStation;
-            this.destinationStation = null;
+      if (this.moving) {
+        this.position.add(this.direction);
+        this.marker.setLatLng(mapCoordsToLatLng(this.position));
+        let endPos = mapCoordsToCanvas(this.destinationStation.lat, this.destinationStation.lon);
+        if (p5.Vector.dist(this.position, endPos) < this.speed) {
+          this.position = endPos;
+          this.moving = false;
+          if (this.rider) {
+            this.rider.inCar = false;
+            this.rider = null;
           }
-        }
-      }
-    
-      display() {
-        fill(255, 0, 0);
-        ellipse(this.position.x, this.position.y, 15, 15);
-        if (this.rider) {
-          fill(0);
-          textAlign(CENTER, CENTER);
-          text(this.rider.id, this.position.x, this.position.y);
+          this.currentStation = this.destinationStation;
+          this.destinationStation = null;
         }
       }
     }
-    
-    class Rider {
-      constructor(id, startStation, endStation) {
-        this.id = id;
-        this.startStation = startStation;
-        this.endStation = endStation;
-        this.inCar = false;
-        this.position = mapCoordsToCanvas(startStation.lat, startStation.lon);
-        this.waitStartTime = currentTime;
-      }
-    
-      update() {
-        if (!this.inCar) {
-          // Update the wait time for the rider
-          this.waitTime = currentTime - this.waitStartTime;
-        }
-      }
-    
-      display() {
-        if (!this.inCar) {
-          fill(0, 100, 255);
-          ellipse(this.position.x, this.position.y, 10, 10);
-          fill(0);
-          textAlign(CENTER, CENTER);
-          text(this.id, this.position.x, this.position.y);
-        }
+  
+    display() {
+      // Visualization handled by marker update
+    }
+  }
+  
+  class Rider {
+    constructor(id, startStation, endStation) {
+      this.id = id;
+      this.startStation = startStation;
+      this.endStation = endStation;
+      this.inCar = false;
+      this.position = mapCoordsToCanvas(startStation.lat, startStation.lon);
+      this.waitStartTime = currentTime;
+    }
+  
+    update() {
+      if (!this.inCar) {
+        // Update the wait time for the rider
+        this.waitTime = currentTime - this.waitStartTime;
       }
     }
-    
+  
+    display() {
+      if (!this.inCar) {
+        fill(0, 100, 255);
+        ellipse(this.position.x, this.position.y, 10, 10);
+        fill(0);
+        textAlign(CENTER, CENTER);
+        text(this.id, this.position.x, this.position.y);
+      }
+    }
+  }
   
