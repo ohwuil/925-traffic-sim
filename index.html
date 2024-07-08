@@ -1,47 +1,17 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <title>Smart Transportation System Simulation</title>
-  <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
-  <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
-  <script src="sketch.js"></script>
-  <style>
-    body, html {
-      height: 100%;
-      margin: 0;
-    }
-    #map {
-      height: 100%;
-    }
-    canvas {
-      position: absolute;
-      top: 0;
-      left: 0;
-      z-index: 400;
-    }
-    .overlay {
-      position: absolute;
-      bottom: 10px;
-      left: 10px;
-      background: rgba(255, 255, 255, 0.8);
-      padding: 10px;
-      font-family: Arial, sans-serif;
-      z-index: 500;
-    }
-    .control {
-      position: absolute;
-      top: 10px;
-      right: 10px;
-      z-index: 500;
-    }
-  </style>
+    <meta charset="UTF-8">
+    <title>Glydways Simulation</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"/>
 </head>
 <body>
-  <div id="map"></div>
-  <div class="overlay" id="overlay"></div>
-  <div class="control">
-    <button id="restartButton" onclick="restartSimulation()">Restart Simulation</button>
-  </div>
+    <div id="map"></div>
+    <div id="overlay"></div>
+    <script src="simulation.js"></script>
+    <script src="sketch.js"></script>
 </body>
 </html>
