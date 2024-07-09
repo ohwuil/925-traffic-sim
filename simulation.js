@@ -155,15 +155,24 @@ class Car {
                         changeStationMarkerColor(this.rider.startStation, "blue");
                         changeStationMarkerColor(this.rider.endStation, "blue");
                         this.rider.inCar = false;
+                        this.rider.arrived = true;  // Mark the rider as arrived
                         this.rider = null;
                     }
                     this.currentStation = this.destinationStation;
                     this.destinationStation = null;
 
                     // Check for next rider after completing current ride
-                    let nextRider = riders.find(rider => !rider.inCar && rider.startStation === this.currentStation);
+                    let nextRider = riders.find(rider => !rider.inCar && rider.startStation === this.currentStation && !rider.arrived);
                     if (nextRider) {
                         this.assignRider(nextRider);
+                        changeStationMarkerColor(nextRider.startStation, "red");
+                        changeStationMarkerColor(nextRider.endStation, "red");
+                    } else {
+                        // Move to start station of second rider if available
+                        let secondRider = riders.find(rider => rider.id === 1 && !rider.inCar && !rider.arrived);
+                        if (secondRider) {
+                            this.moveTo(secondRider.startStation);
+                        }
                     }
                 }
             }
@@ -181,19 +190,20 @@ class Rider {
         this.startStation = startStation;
         this.endStation = endStation;
         this.inCar = false;
+        this.arrived = false;
         this.position = mapCoordsToCanvas(startStation.lat, startStation.lon);
         this.waitStartTime = currentTime;
     }
 
     update() {
-        if (!this.inCar) {
+        if (!this.inCar && !this.arrived) {
             // Update the wait time for the rider
             this.waitTime = currentTime - this.waitStartTime;
         }
     }
 
     display() {
-        if (!this.inCar) {
+        if (!this.inCar && !this.arrived) {
             fill(0, 100, 255);
             ellipse(this.position.x, this.position.y, 10, 10);
             fill(0);
@@ -232,4 +242,32 @@ function restartSimulation() {
 function changeStationMarkerColor(station, color) {
     let markerIcon = color === "red" ? redMarkerIcon : blueMarkerIcon;
     station.marker.setIcon(markerIcon);
+}
+
+function updateOverlay() {
+    let overlay = document.getElementById('overlay');
+    let currentTimeStr = new Date((currentTime + startTime) * 60 * 1000).toISOString().substr(11, 5);
+    let overlayText = `<strong>Current Time:</strong> ${currentTimeStr}<br><strong>Riders:</strong><br>`;
+    for (let rider of riders) {
+        overlayText += `Rider ${rider.id}: `;
+        if (rider.arrived) {
+            overlayText += `Arrived at ${rider.endStation.name}<br>`;
+        } else if (rider.inCar) {
+            overlayText += `Traveling from ${rider.startStation.name} to ${rider.endStation.name}, traveled ${(currentTime - rider.startTravelTime).toFixed(2)} minutes<br>`;
+        } else {
+            overlayText += `Waiting at ${rider.startStation.name} for ${(currentTime - rider.waitStartTime).toFixed(2)} minutes<br>`;
+        }
+    }
+
+    overlayText += `<br><strong>Cars:</strong><br>`;
+    for (let car of cars) {
+        overlayText += `Car ${car.id}: `;
+        if (car.moving) {
+            overlayText += `Traveling from ${car.currentStation.name} to ${car.destinationStation.name}<br>`;
+        } else {
+            overlayText += `At ${car.currentStation.name}<br>`;
+        }
+    }
+
+    overlay.innerHTML = overlayText;
 }

@@ -25,7 +25,7 @@ function setup() {
         let startStation = stations.find(station => station.name === connection[0]);
         let endStation = stations.find(station => station.name === connection[1]);
         if (startStation && endStation) {
-            L.polyline([[startStation.lat, startStation.lon], [endStation.lat, endStation.lon]], { color: 'black' }).addTo(myLeafletMap);
+            L.polyline([[startStation.lat, startStation.lon], [endStation.lat, endStation.lon]], { color: 'blue' }).addTo(myLeafletMap);
         }
     }
 
@@ -46,6 +46,9 @@ function draw() {
         // Check if it's time to add the second rider
         if (currentTime >= 2 && !riders.some(r => r.id === 1)) {
             addSecondRider();
+            let secondRider = riders.find(r => r.id === 1);
+            changeStationMarkerColor(secondRider.startStation, "red");
+            changeStationMarkerColor(secondRider.endStation, "red");
         }
 
         // Update and draw cars
@@ -56,7 +59,7 @@ function draw() {
         // Allocate cars to waiting riders
         for (let car of cars) {
             if (!car.moving && riders.length > 0) {
-                let waitingRider = riders.find(rider => !rider.inCar);
+                let waitingRider = riders.find(rider => !rider.inCar && !rider.arrived);
                 if (waitingRider) {
                     if (car.currentStation === waitingRider.startStation) {
                         car.assignRider(waitingRider);
@@ -82,30 +85,4 @@ function mapCoordsToCanvas(lat, lon) {
 function mapCoordsToLatLng(vector) {
     let latLng = myLeafletMap.layerPointToLatLng([vector.x, vector.y]);
     return [latLng.lat, latLng.lng];
-}
-
-function updateOverlay() {
-    let overlay = document.getElementById('overlay');
-    let currentTimeStr = new Date((currentTime + startTime) * 60 * 1000).toISOString().substr(11, 5);
-    let overlayText = `<strong>Current Time:</strong> ${currentTimeStr}<br><strong>Riders:</strong><br>`;
-    for (let rider of riders) {
-        overlayText += `Rider ${rider.id}: `;
-        if (rider.inCar) {
-            overlayText += `Traveling from ${rider.startStation.name} to ${rider.endStation.name}, traveled ${(currentTime - rider.startTravelTime).toFixed(2)} minutes<br>`;
-        } else {
-            overlayText += `Waiting at ${rider.startStation.name} for ${(currentTime - rider.waitStartTime).toFixed(2)} minutes<br>`;
-        }
-    }
-
-    overlayText += `<br><strong>Cars:</strong><br>`;
-    for (let car of cars) {
-        overlayText += `Car ${car.id}: `;
-        if (car.moving) {
-            overlayText += `Traveling from ${car.currentStation.name} to ${car.destinationStation.name}<br>`;
-        } else {
-            overlayText += `At ${car.currentStation.name}<br>`;
-        }
-    }
-
-    overlay.innerHTML = overlayText;
 }
