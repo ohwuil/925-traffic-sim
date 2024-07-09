@@ -156,6 +156,7 @@ class Car {
                         changeStationMarkerColor(this.rider.endStation, "blue");
                         this.rider.inCar = false;
                         this.rider.arrived = true;  // Mark the rider as arrived
+                        this.rider.endTravelTime = currentTime;  // Track the end of the travel time
                         this.rider = null;
                     }
                     this.currentStation = this.destinationStation;
@@ -167,8 +168,7 @@ class Car {
                         this.assignRider(nextRider);
                         changeStationMarkerColor(nextRider.startStation, "red");
                         changeStationMarkerColor(nextRider.endStation, "red");
-                    } else {
-                        // Move to start station of second rider if available
+                    } else {                        // Move to start station of second rider if available
                         let secondRider = riders.find(rider => rider.id === 1 && !rider.inCar && !rider.arrived);
                         if (secondRider) {
                             this.moveTo(secondRider.startStation);
@@ -193,6 +193,8 @@ class Rider {
         this.arrived = false;
         this.position = mapCoordsToCanvas(startStation.lat, startStation.lon);
         this.waitStartTime = currentTime;
+        this.startTravelTime = null;
+        this.endTravelTime = null;
     }
 
     update() {
@@ -210,6 +212,14 @@ class Rider {
             textAlign(CENTER, CENTER);
             text(this.id, this.position.x, this.position.y);
         }
+    }
+
+    getTravelTime() {
+        return this.endTravelTime ? this.endTravelTime - this.startTravelTime : null;
+    }
+
+    getWaitTime() {
+        return this.arrived ? this.waitStartTime : null;
     }
 }
 
@@ -248,10 +258,24 @@ function updateOverlay() {
     let overlay = document.getElementById('overlay');
     let currentTimeStr = new Date((currentTime + startTime) * 60 * 1000).toISOString().substr(11, 5);
     let overlayText = `<strong>Current Time:</strong> ${currentTimeStr}<br><strong>Riders:</strong><br>`;
+    let totalRideTime = 0;
+    let totalWaitTime = 0;
+    let totalRides = 0;
+    let totalWaits = 0;
     for (let rider of riders) {
         overlayText += `Rider ${rider.id}: `;
         if (rider.arrived) {
             overlayText += `Arrived at ${rider.endStation.name}<br>`;
+            let travelTime = rider.getTravelTime();
+            if (travelTime !== null) {
+                totalRideTime += travelTime;
+                totalRides++;
+            }
+            let waitTime = rider.getWaitTime();
+            if (waitTime !== null) {
+                totalWaitTime += waitTime;
+                totalWaits++;
+            }
         } else if (rider.inCar) {
             overlayText += `Traveling from ${rider.startStation.name} to ${rider.endStation.name}, traveled ${(currentTime - rider.startTravelTime).toFixed(2)} minutes<br>`;
         } else {
@@ -267,6 +291,14 @@ function updateOverlay() {
         } else {
             overlayText += `At ${car.currentStation.name}<br>`;
         }
+    }
+
+    if (totalRides > 0) {
+        overlayText += `<br><strong>Statistics:</strong><br>`;
+        overlayText += `Average Ride Time: ${(totalRideTime / totalRides).toFixed(2)} minutes<br>`;
+    }
+    if (totalWaits > 0) {
+        overlayText += `Average Wait Time: ${(totalWaitTime / totalWaits).toFixed(2)} minutes<br>`;
     }
 
     overlay.innerHTML = overlayText;
