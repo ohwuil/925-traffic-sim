@@ -1,43 +1,75 @@
 let stations = [
-    // Pittsburg
-    { name: "Railroad Ave & E Leland Rd", lat: 38.0169, lon: -121.8854 },
-    { name: "Railroad Ave & Central Ave", lat: 38.0139, lon: -121.8893 },
-    { name: "E Leland Rd & Harbor St", lat: 38.0141, lon: -121.8845 },
-    { name: "Railroad Ave & E 10th St", lat: 38.0085, lon: -121.8921 },
-    // Antioch
-    { name: "A St & W 10th St", lat: 38.0020, lon: -121.8067 },
-    { name: "Lone Tree Way & Hillcrest Ave", lat: 37.9817, lon: -121.8058 },
-    { name: "Deer Valley Rd & Lone Tree Way", lat: 37.9785, lon: -121.7962 },
-    { name: "Davison Dr & Hillcrest Ave", lat: 37.9799, lon: -121.7822 },
+    { name: "A", lat: 38.01699345044407, lon: -121.94638573082345 }, // Bay Point (Bart)
+    { name: "B", lat: 38.01837994162642, lon: -121.95760346848552 },
+    { name: "C", lat: 38.01973230013453, lon: -121.96459866921425 },  
+    { name: "D", lat: 38.026595134855945, lon: -121.95498563262994 },  
+    { name: "E", lat: 38.02673035666877, lon: -121.94545842672945 }, 
+    { name: "F", lat: 38.02666274580736, lon: -121.93923570170942 }, 
+    { name: "G", lat: 38.02689938359431, lon: -121.92610360658814 }, 
+    { name: "H", lat: 38.029637565373584, lon: -121.91125489751217 }, 
+    { name: "I", lat: 38.02967136956211, lon: -121.91104032020498 }, 
+    { name: "J", lat: 38.03149676632553, lon: -121.90674878601556 }, 
+    { name: "K", lat: 38.03197000991321, lon: -121.90069772280849 }, 
+    { name: "L", lat: 38.03261226412525, lon: -121.8833170083404 }, // Pittsburg
+    { name: "M", lat: 38.02635849624187, lon:  -121.88610650556352 }, 
+    { name: "N", lat: 38.02108463378863, lon: -121.88778020400991 }, 
+    { name: "O", lat: 38.01695993843636, lon: -121.8895826483695 }, // Pittsburg Center Bart
+    { name: "P", lat: 38.01259832763476, lon: -121.89099885474108 },
+    { name: "Q", lat: 38.0113134625897, lon: -121.88597775973945 },
+    { name: "R", lat: 38.01107677446706, lon: -121.88580609837187 },
+    { name: "S", lat: 38.01002857493957, lon: -121.88155747896411 },
+    { name: "T", lat: 38.00921705539965, lon: -121.87636472259491 },
+    { name: "U", lat: 38.0084055268009, lon: -121.87164403474979 },
+    { name: "V", lat: 38.00823645722786, lon: -121.86692334714142 },
+    { name: "W", lat: 38.00806738726494, lon: -121.86078645325057 }, // LMC
+    // antioch
+    { name: "X", lat: 38.00378938397287, lon: -121.85056791253373 }, // Turner Elementary School
+    { name: "Y", lat: 38.00331720142464, lon: -121.84540926125906 }, // Sommersville Town Center 1
+    { name: "Z", lat: 38.00329667167967, lon: -121.83806209126182 }, // Sommersville Town Center 2
+    { name: "AA", lat: 38.00596549034543, lon: -121.83464904382069 }, // Lowe's home improvement
+    { name: "AB", lat: 38.01078964686703, lon: -121.83045438256431 }, 
+    { name: "AC", lat: 38.015757169897796, lon: -121.82026734853966 }, 
+    { name: "AD", lat: 38.01787134405292, lon: -121.81609874144903 }, // Antioch/Pittsburg Amtrak station 
+    { name: "AE", lat: 38.01707083871175, lon: -121.81109641252044 }, 
+    { name: "AF", lat: 38.00958262249506, lon: -121.80581586558077 }, 
+    { name: "AG", lat: 38.006076205786805, lon: -121.80609184583933 }, 
+    { name: "AH", lat: 38.00509764096123, lon: -121.80243510741363 }, 
+    { name: "AI", lat: 38.00485299771418, lon: -121.78853260188956 }, 
+    { name: "AJ", lat: 37.99596526145414, lon: -121.78069165047567 }, 
     // Oakley
-    { name: "Main St & Norcross Ln", lat: 37.9989, lon: -121.7483 },
-    { name: "Main St & Empire Ave", lat: 37.9964, lon: -121.7373 },
-    { name: "Main St & O'Hara Ave", lat: 37.9960, lon: -121.7297 },
-    { name: "Laurel Rd & Empire Ave", lat: 37.9973, lon: -121.7324 },
-    // Brentwood
-    { name: "Balfour Rd & Walnut Blvd", lat: 37.9271, lon: -121.7142 },
-    { name: "Balfour Rd & Griffith Ln", lat: 37.9256, lon: -121.7033 },
-    { name: "Balfour Rd & John Muir Pkwy", lat: 37.9233, lon: -121.6874 },
-    { name: "Brentwood Blvd & Sand Creek Rd", lat: 37.9234, lon: -121.7020 }
+    { name: "AK", lat: 37.99323616265046, lon: -121.75833942391635 }, 
+    // AK connets to both AL and AM
+    { name: "AL", lat: 37.983608625886056, lon: -121.7424867043436}, 
+    { name: "AM", lat: 37.97976240057517, lon: -121.74080766373412}, 
+    { name: "AN", lat: 37.98311235002304, lon: -121.7323599914176}, 
+    { name: "AO", lat: 37.986875691066096, lon: -121.71457265653993}, 
+    { name: "AP", lat: 37.99072154357454, lon: -121.70617745334363},  
+    { name: "AQ", lat: 37.99502204295972, lon: -121.7053904031278}, 
+    { name: "AP", lat: 37.99795781599213, lon: -121.7126312651134},
+    // AM connets to AR and through the Brentwood line
+    { name: "AR", lat: 37.97393064214193, lon: -121.73645265215873}
+    // Brentwood 
+    
+    
 ];
 
 // Define connections between stations (as paths)
 let connections = [
-    ["Railroad Ave & E Leland Rd", "Railroad Ave & Central Ave"],
-    ["Railroad Ave & Central Ave", "E Leland Rd & Harbor St"],
-    ["E Leland Rd & Harbor St", "Railroad Ave & E 10th St"],
-    ["Railroad Ave & E 10th St", "A St & W 10th St"],
-    ["A St & W 10th St", "Lone Tree Way & Hillcrest Ave"],
-    ["Lone Tree Way & Hillcrest Ave", "Deer Valley Rd & Lone Tree Way"],
-    ["Deer Valley Rd & Lone Tree Way", "Davison Dr & Hillcrest Ave"],
-    ["Davison Dr & Hillcrest Ave", "Main St & Norcross Ln"],
-    ["Main St & Norcross Ln", "Main St & Empire Ave"],
-    ["Main St & Empire Ave", "Main St & O'Hara Ave"],
-    ["Main St & O'Hara Ave", "Laurel Rd & Empire Ave"],
-    ["Laurel Rd & Empire Ave", "Balfour Rd & Walnut Blvd"],
-    ["Balfour Rd & Walnut Blvd", "Balfour Rd & Griffith Ln"],
-    ["Balfour Rd & Griffith Ln", "Balfour Rd & John Muir Pkwy"],
-    ["Balfour Rd & John Muir Pkwy", "Brentwood Blvd & Sand Creek Rd"]
+    ["A", "B"],
+    ["B", "C"],
+    ["C", "D"],
+    ["D", "E"],
+    ["E", "F"],
+    ["F", "G"],
+    ["G", "H"],
+    ["H", "I"],
+    ["I", "J"],
+    ["J", "K"],
+    ["K", "L"],
+    ["L", "M"],
+    ["M", "N"],
+    ["N", "O"],
+    ["O", "P"]
 ];
 
 let cars = [];
@@ -168,7 +200,8 @@ class Car {
                         this.assignRider(nextRider);
                         changeStationMarkerColor(nextRider.startStation, "red");
                         changeStationMarkerColor(nextRider.endStation, "red");
-                    } else {                        // Move to start station of second rider if available
+                    } else {
+                        // Move to start station of second rider if available
                         let secondRider = riders.find(rider => rider.id === 1 && !rider.inCar && !rider.arrived);
                         if (secondRider) {
                             this.moveTo(secondRider.startStation);
@@ -230,17 +263,17 @@ function initializeSimulation() {
     simulationRunning = true;
 
     // Create one car at the start station
-    let startStation = stations.find(station => station.name === "Brentwood Blvd & Sand Creek Rd");
+    let startStation = stations.find(station => station.name === "P");
     cars.push(new Car(0, startStation));
 
     // Create one rider at the start station with a specific destination
-    let endStation = stations.find(station => station.name === "Main St & Norcross Ln");
+    let endStation = stations.find(station => station.name === "I");
     riders.push(new Rider(0, startStation, endStation));
 }
 
 function addSecondRider() {
-    let startStation = stations.find(station => station.name === "Railroad Ave & Central Ave");
-    let endStation = stations.find(station => station.name === "Balfour Rd & Walnut Blvd");
+    let startStation = stations.find(station => station.name === "B");
+    let endStation = stations.find(station => station.name === "M");
     riders.push(new Rider(1, startStation, endStation));
 }
 
