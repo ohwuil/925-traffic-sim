@@ -45,31 +45,37 @@ let stations = [
     { name: "AO", lat: 37.986875691066096, lon: -121.71457265653993}, 
     { name: "AP", lat: 37.99072154357454, lon: -121.70617745334363},  
     { name: "AQ", lat: 37.99502204295972, lon: -121.7053904031278}, 
-    { name: "AP", lat: 37.99795781599213, lon: -121.7126312651134},
-    // AM connets to AR and through the Brentwood line
-    { name: "AR", lat: 37.97393064214193, lon: -121.73645265215873}
+    { name: "AR", lat: 37.99795781599213, lon: -121.7126312651134},
+    // AM connets to AS and through the Brentwood line
+    { name: "AS", lat: 37.97393064214193, lon: -121.73645265215873},
     // Brentwood 
-    
-    
+    { name: "AT", lat: 37.96966071934799, lon: -121.7352040878904},
+    { name: "AU", lat: 37.96528540012603, lon: -121.73657255611303},
+    { name: "AV", lat: 37.96210863513287, lon: -121.7411341168551},
+    { name: "AW", lat: 37.96151907242513, lon: -121.75097818623304},
+    { name: "AX", lat: 37.95767631036896, lon: -121.74992696372814}, 
+    { name: "AY", lat: 37.95496365143684, lon: -121.74677329551652}, 
+    { name: "AZ", lat: 37.950857083949174, lon: -121.74805319767091}, 
+    { name: "BA", lat: 37.947563068616994, lon: -121.74306367607852}, 
+    { name: "BB", lat: 37.94545848150268, lon: -121.74120710990465} // AMC Brentwood  
+
 ];
 
 // Define connections between stations (as paths)
 let connections = [
-    ["A", "B"],
-    ["B", "C"],
-    ["C", "D"],
-    ["D", "E"],
-    ["E", "F"],
-    ["F", "G"],
-    ["G", "H"],
-    ["H", "I"],
-    ["I", "J"],
-    ["J", "K"],
-    ["K", "L"],
-    ["L", "M"],
-    ["M", "N"],
-    ["N", "O"],
-    ["O", "P"]
+    ["A", "B"], ["B", "C"], ["C", "D"], ["D", "E"], 
+    // Assuming direct connections between "E" and "AK" for simplicity
+    ["E", "F"], ["F", "G"], ["G", "H"], ["H", "I"], ["I", "J"], 
+    ["J", "K"], ["K", "L"], ["L", "M"], ["M", "N"], ["N", "O"], 
+    ["O", "P"], ["P", "Q"], ["Q", "R"], ["R", "S"], ["S", "T"], 
+    ["T", "U"], ["U", "V"], ["V", "W"], ["W", "X"], ["X", "Y"], 
+    ["Y", "Z"], ["Z", "AA"], ["AA", "AB"], ["AB", "AC"], ["AC", "AD"], 
+    ["AD", "AE"], ["AE", "AF"], ["AF", "AG"], ["AG", "AH"], ["AH", "AI"], 
+    ["AI", "AJ"], ["AJ", "AK"],
+    // Path 1 from AK
+    ["AK", "AL"], ["AL", "AN"], ["AN", "AO"], ["AO", "AP"], ["AP", "AQ"], ["AQ", "AR"],
+    // Path 2 from AK
+    ["AK", "AM"], ["AM", "AS"], ["AS", "AT"], ["AT", "AU"], ["AU", "AV"], ["AV", "AW"], ["AW", "AX"], ["AX", "AY"], ["AY", "AZ"], ["AZ", "BA"], ["BA", "BB"]
 ];
 
 let cars = [];
