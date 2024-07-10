@@ -1,6 +1,12 @@
 let mapWidth = 800, mapHeight = 600;
 let canvas, myLeafletMap;
 
+let predefinedRides = [
+    { time: 0, start: "A", end: "Z" },
+    { time: 1, start: "G", end: "AA" },
+    { time: 2, start: "BB", end: "AR" }
+];
+
 function setup() {
     frameRate(targetFrameRate);
     canvas = createCanvas(mapWidth, mapHeight);
@@ -38,18 +44,26 @@ function draw() {
 
         // Update current time
         currentTime += timeStep / targetFrameRate;
-        if (currentTime >= 720) {
+        if (currentTime >= 720) { // 720 minutes in 12 hours
             simulationRunning = false;
             noLoop();
         }
 
-        // Check if it's time to add the second rider
-        // if (currentTime >= 2 && !riders.some(r => r.id === 1)) {
-        //     addSecondRider();
-        //     let secondRider = riders.find(r => r.id === 1);
-        //     changeStationMarkerColor(secondRider.startStation, "red");
-        //     changeStationMarkerColor(secondRider.endStation, "red");
-        // }
+        // Log the current time
+        console.log(`Current Time: ${currentTime.toFixed(2)} minutes`);
+
+        // Start predefined rides at the proper simulated times
+        for (let ride of predefinedRides) {
+            if (currentTime >= ride.time && !riders.some(r => r.startStation.name === ride.start && r.endStation.name === ride.end)) {
+                let startStation = stations.find(station => station.name === ride.start);
+                let endStation = stations.find(station => station.name === ride.end);
+                let riderId = riders.length;
+                riders.push(new Rider(riderId, startStation, endStation));
+                console.log(`Starting ride ${riderId} from ${ride.start} to ${ride.end} at time ${ride.time} minutes`);
+                changeStationMarkerColor(startStation, "yellow");
+                changeStationMarkerColor(endStation, "yellow");
+            }
+        }
 
         // Update and draw cars
         for (let car of cars) {
@@ -61,7 +75,7 @@ function draw() {
             if (!car.moving && riders.length > 0) {
                 let waitingRider = riders.find(rider => !rider.inCar && !rider.arrived);
                 if (waitingRider) {
-                    if (car.currentStation === waitingRider.startStation) {
+                    if (car.hasReachedStation(waitingRider.startStation)) {
                         car.assignRider(waitingRider);
                         changeStationMarkerColor(waitingRider.startStation, "red");
                         changeStationMarkerColor(waitingRider.endStation, "red");

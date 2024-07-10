@@ -5,8 +5,8 @@ let stations = [
     { name: "D", lat: 38.026595134855945, lon: -121.95498563262994 },  
     { name: "E", lat: 38.02673035666877, lon: -121.94545842672945 }, 
     { name: "F", lat: 38.02666274580736, lon: -121.93923570170942 }, 
-    { name: "G", lat: 38.02689938359431, lon: -121.92610360658814 }, 
-    { name: "H", lat: 38.029637565373584, lon: -121.91125489751217 }, 
+    { name: "G", lat: 38.02689549995812, lon: -121.9321178052867 }, 
+    { name: "H", lat: 38.02689938359431, lon: -121.92610360658814 }, 
     { name: "I", lat: 38.02967136956211, lon: -121.91104032020498 }, 
     { name: "J", lat: 38.03149676632553, lon: -121.90674878601556 }, 
     { name: "K", lat: 38.03197000991321, lon: -121.90069772280849 }, 
@@ -78,6 +78,14 @@ let connections = [
     ["AK", "AM"], ["AM", "AS"], ["AS", "AT"], ["AT", "AU"], ["AU", "AV"], ["AV", "AW"], ["AW", "AX"], ["AX", "AY"], ["AY", "AZ"], ["AZ", "BA"], ["BA", "BB"]
 ];
 
+for (let connection of connections) {
+    let startStation = stations.find(station => station.name === connection[0]);
+    let endStation = stations.find(station => station.name === connection[1]);
+    if (!startStation || !endStation) {
+        console.error(`Invalid connection: ${connection[0]} to ${connection[1]}`);
+    }
+}
+
 let cars = [];
 let riders = [];
 let numCars = 1;
@@ -108,6 +116,13 @@ let redMarkerIcon = L.icon({
     popupAnchor: [0, -32]
 });
 
+let yellowMarkerIcon = L.icon({
+    iconUrl: 'https://maps.google.com/mapfiles/ms/icons/yellow-dot.png',
+    iconSize: [32, 32],
+    iconAnchor: [16, 32],
+    popupAnchor: [0, -32]
+});
+
 class Car {
     constructor(id, startStation) {
         this.id = id;
@@ -124,6 +139,7 @@ class Car {
     }
 
     assignRider(rider) {
+        console.log(`Assigning rider ${rider.id} to car ${this.id}`);
         this.rider = rider;
         this.destinationStation = rider.endStation;
         rider.inCar = true;
@@ -133,12 +149,14 @@ class Car {
     }
 
     moveTo(station) {
+        console.log(`Moving car ${this.id} to station ${station.name}`);
         this.destinationStation = station;
         this.setPathTo(this.destinationStation);
         this.moving = true;
     }
 
     setPathTo(station) {
+        console.log(`Setting path for car ${this.id} to station ${station.name}`);
         this.path = this.calculatePath(this.currentStation, station);
         this.pathIndex = 0;
         if (this.path.length > 1) {
@@ -146,23 +164,28 @@ class Car {
         } else {
             this.direction = createVector(0, 0);
         }
+        console.log(`Path for car ${this.id}:`, this.path);
     }
 
     calculatePath(startStation, endStation) {
-        // Use connections to find path between startStation and endStation
+        console.log(`Calculating path from ${startStation.name} to ${endStation.name}`);
         let path = [];
         let visited = new Set();
         let queue = [[startStation]];
+
         while (queue.length > 0) {
             let currentPath = queue.shift();
             let currentStation = currentPath[currentPath.length - 1];
+
             if (currentStation === endStation) {
                 for (let station of currentPath) {
                     path.push(mapCoordsToCanvas(station.lat, station.lon));
                 }
                 break;
             }
-            visited.add(currentStation);
+
+            visited.add(currentStation.name);
+
             for (let connection of connections) {
                 let nextStation = null;
                 if (connection[0] === currentStation.name) {
@@ -170,35 +193,53 @@ class Car {
                 } else if (connection[1] === currentStation.name) {
                     nextStation = stations.find(station => station.name === connection[0]);
                 }
-                if (nextStation && !visited.has(nextStation)) {
+
+                if (nextStation && !visited.has(nextStation.name)) {
                     queue.push([...currentPath, nextStation]);
+                    visited.add(nextStation.name); // Ensure we don't re-add this station
                 }
             }
         }
+
+        if (path.length === 0) {
+            console.log(`No path found from ${startStation.name} to ${endStation.name}`);
+        } else {
+            console.log(`Path for car ${this.id}:`, path);
+        }
+
         return path;
     }
 
     update() {
         if (this.moving && this.path.length > 0) {
-            this.position.add(this.direction);
-            this.marker.setLatLng(mapCoordsToLatLng(this.position));
             let nextPos = this.path[this.pathIndex + 1];
-            if (p5.Vector.dist(this.position, nextPos) < this.speed) {
+            if (!nextPos) {
+                console.error(`Car ${this.id} has no next position to move to.`);
+                this.moving = false;
+                return;
+            }
+
+            let distanceToNext = p5.Vector.dist(this.position, nextPos);
+
+            // If the car is very close to the next position, snap to the next position
+            if (distanceToNext < this.speed) {
+                this.position = nextPos.copy(); // Snap to the next position
                 this.pathIndex++;
                 if (this.pathIndex < this.path.length - 1) {
                     this.direction = p5.Vector.sub(this.path[this.pathIndex + 1], this.path[this.pathIndex]).normalize().mult(this.speed);
                 } else {
                     this.moving = false;
+                    this.currentStation = this.destinationStation;
+                    this.destinationStation = null;
+
                     if (this.rider) {
                         changeStationMarkerColor(this.rider.startStation, "blue");
                         changeStationMarkerColor(this.rider.endStation, "blue");
                         this.rider.inCar = false;
-                        this.rider.arrived = true;  // Mark the rider as arrived
-                        this.rider.endTravelTime = currentTime;  // Track the end of the travel time
+                        this.rider.arrived = true;
+                        this.rider.endTravelTime = currentTime;
                         this.rider = null;
                     }
-                    this.currentStation = this.destinationStation;
-                    this.destinationStation = null;
 
                     // Check for next rider after completing current ride
                     let nextRider = riders.find(rider => !rider.inCar && rider.startStation === this.currentStation && !rider.arrived);
@@ -206,14 +247,11 @@ class Car {
                         this.assignRider(nextRider);
                         changeStationMarkerColor(nextRider.startStation, "red");
                         changeStationMarkerColor(nextRider.endStation, "red");
-                    } else {
-                        // Move to start station of second rider if available
-                        let secondRider = riders.find(rider => rider.id === 1 && !rider.inCar && !rider.arrived);
-                        if (secondRider) {
-                            this.moveTo(secondRider.startStation);
-                        }
                     }
                 }
+            } else {
+                this.position.add(this.direction);
+                this.marker.setLatLng(mapCoordsToLatLng(this.position));
             }
         }
     }
@@ -221,7 +259,12 @@ class Car {
     display() {
         // Visualization handled by marker update
     }
+
+    hasReachedStation(station) {
+        return this.currentStation === station && !this.moving;
+    }
 }
+
 
 class Rider {
     constructor(id, startStation, endStation) {
@@ -268,19 +311,11 @@ function initializeSimulation() {
     currentTime = 0;
     simulationRunning = true;
 
-    // Create one car at the start station
-    let startStation = stations.find(station => station.name === "P");
-    cars.push(new Car(0, startStation));
-
-    // Create one rider at the start station with a specific destination
-    let endStation = stations.find(station => station.name === "I");
-    riders.push(new Rider(0, startStation, endStation));
-}
-
-function addSecondRider() {
-    let startStation = stations.find(station => station.name === "B");
-    let endStation = stations.find(station => station.name === "M");
-    riders.push(new Rider(1, startStation, endStation));
+    // Initialize cars but without assigning any specific ride
+    for (let i = 0; i < numCars; i++) {
+        let startStation = stations[0]; // Starting all cars at the first station for simplicity
+        cars.push(new Car(i, startStation));
+    }
 }
 
 function restartSimulation() {
@@ -289,7 +324,14 @@ function restartSimulation() {
 }
 
 function changeStationMarkerColor(station, color) {
-    let markerIcon = color === "red" ? redMarkerIcon : blueMarkerIcon;
+    let markerIcon;
+    if (color === "red") {
+        markerIcon = redMarkerIcon;
+    } else if (color === "yellow") {
+        markerIcon = yellowMarkerIcon;
+    } else {
+        markerIcon = blueMarkerIcon;
+    }
     station.marker.setIcon(markerIcon);
 }
 
