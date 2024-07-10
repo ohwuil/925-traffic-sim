@@ -281,27 +281,16 @@ class Rider {
 
     update() {
         if (!this.inCar && !this.arrived) {
-            // Update the wait time for the rider
             this.waitTime = currentTime - this.waitStartTime;
         }
     }
 
-    display() {
-        if (!this.inCar && !this.arrived) {
-            fill(0, 100, 255);
-            ellipse(this.position.x, this.position.y, 10, 10);
-            fill(0);
-            textAlign(CENTER, CENTER);
-            text(this.id, this.position.x, this.position.y);
-        }
-    }
-
     getTravelTime() {
-        return this.endTravelTime ? this.endTravelTime - this.startTravelTime : null;
+        return this.endTravelTime !== null ? this.endTravelTime - this.startTravelTime : null;
     }
 
     getWaitTime() {
-        return this.arrived ? this.waitStartTime : null;
+        return this.endTravelTime !== null ? this.startTravelTime - this.waitStartTime : null;
     }
 }
 
@@ -343,24 +332,25 @@ function updateOverlay() {
     let totalWaitTime = 0;
     let totalRides = 0;
     let totalWaits = 0;
+
     for (let rider of riders) {
         overlayText += `Rider ${rider.id}: `;
         if (rider.arrived) {
-            overlayText += `Arrived at ${rider.endStation.name}<br>`;
             let travelTime = rider.getTravelTime();
+            let waitTime = rider.getWaitTime();
+            overlayText += `Arrived at ${rider.endStation.name}. Ride Time: ${travelTime.toFixed(2)} mins, Wait Time: ${waitTime.toFixed(2)} mins<br>`;
             if (travelTime !== null) {
                 totalRideTime += travelTime;
                 totalRides++;
             }
-            let waitTime = rider.getWaitTime();
             if (waitTime !== null) {
                 totalWaitTime += waitTime;
                 totalWaits++;
             }
         } else if (rider.inCar) {
-            overlayText += `Traveling from ${rider.startStation.name} to ${rider.endStation.name}, traveled ${(currentTime - rider.startTravelTime).toFixed(2)} minutes<br>`;
+            overlayText += `Traveling from ${rider.startStation.name} to ${rider.endStation.name}, traveled ${(currentTime - rider.startTravelTime).toFixed(2)} mins<br>`;
         } else {
-            overlayText += `Waiting at ${rider.startStation.name} for ${(currentTime - rider.waitStartTime).toFixed(2)} minutes<br>`;
+            overlayText += `Waiting at ${rider.startStation.name} for ${(currentTime - rider.waitStartTime).toFixed(2)} mins<br>`;
         }
     }
 
@@ -376,10 +366,10 @@ function updateOverlay() {
 
     if (totalRides > 0) {
         overlayText += `<br><strong>Statistics:</strong><br>`;
-        overlayText += `Average Ride Time: ${(totalRideTime / totalRides).toFixed(2)} minutes<br>`;
+        overlayText += `Average Ride Time: ${(totalRideTime / totalRides).toFixed(2)} mins<br>`;
     }
     if (totalWaits > 0) {
-        overlayText += `Average Wait Time: ${(totalWaitTime / totalWaits).toFixed(2)} minutes<br>`;
+        overlayText += `Average Wait Time: ${(totalWaitTime / totalWaits).toFixed(2)} mins<br>`;
     }
 
     overlay.innerHTML = overlayText;
