@@ -44,12 +44,12 @@ function draw() {
         }
 
         // Check if it's time to add the second rider
-        if (currentTime >= 2 && !riders.some(r => r.id === 1)) {
-            addSecondRider();
-            let secondRider = riders.find(r => r.id === 1);
-            changeStationMarkerColor(secondRider.startStation, "red");
-            changeStationMarkerColor(secondRider.endStation, "red");
-        }
+        // if (currentTime >= 2 && !riders.some(r => r.id === 1)) {
+        //     addSecondRider();
+        //     let secondRider = riders.find(r => r.id === 1);
+        //     changeStationMarkerColor(secondRider.startStation, "red");
+        //     changeStationMarkerColor(secondRider.endStation, "red");
+        // }
 
         // Update and draw cars
         for (let car of cars) {
