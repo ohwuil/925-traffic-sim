@@ -300,11 +300,13 @@ function initializeSimulation() {
     currentTime = 0;
     simulationRunning = true;
 
-    // Initialize cars but without assigning any specific ride
-    for (let i = 0; i < numCars; i++) {
-        let startStation = stations[0]; // Starting all cars at the first station for simplicity
-        cars.push(new Car(i, startStation));
-    }
+    // Initialize the first car at the first station
+    let startStation1 = stations[0]; 
+    cars.push(new Car(0, startStation1));
+
+    // Initialize the second car at station BB
+    let startStation2 = stations.find(station => station.name === "G");
+    cars.push(new Car(1, startStation2));
 }
 
 function restartSimulation() {

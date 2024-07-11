@@ -71,16 +71,28 @@ function draw() {
         }
 
         // Allocate cars to waiting riders
-        for (let car of cars) {
-            if (!car.moving && riders.length > 0) {
-                let waitingRider = riders.find(rider => !rider.inCar && !rider.arrived);
-                if (waitingRider) {
-                    if (car.hasReachedStation(waitingRider.startStation)) {
-                        car.assignRider(waitingRider);
-                        changeStationMarkerColor(waitingRider.startStation, "red");
-                        changeStationMarkerColor(waitingRider.endStation, "red");
+        for (let rider of riders) {
+            if (!rider.inCar && !rider.arrived) {
+                let closestCar = null;
+                let minDistance = Infinity;
+                
+                for (let car of cars) {
+                    if (!car.moving) {
+                        let distance = p5.Vector.dist(car.position, mapCoordsToCanvas(rider.startStation.lat, rider.startStation.lon));
+                        if (distance < minDistance) {
+                            closestCar = car;
+                            minDistance = distance;
+                        }
+                    }
+                }
+
+                if (closestCar) {
+                    if (closestCar.hasReachedStation(rider.startStation)) {
+                        closestCar.assignRider(rider);
+                        changeStationMarkerColor(rider.startStation, "red");
+                        changeStationMarkerColor(rider.endStation, "red");
                     } else {
-                        car.moveTo(waitingRider.startStation);
+                        closestCar.moveTo(rider.startStation);
                     }
                 }
             }
