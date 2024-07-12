@@ -22,6 +22,8 @@ body {
     z-index: 1000;
     max-width: 250px;
     overflow-y: auto;
+    font-size: 12px;
+    font-family: Arial, sans-serif;
 }
 
 #overlay {
@@ -38,12 +40,17 @@ body {
     font-size: 12px;
     font-family: Arial, sans-serif;
     display: flex;
+    flex-direction: row;
 }
 
 .column {
     flex: 1;
     padding: 5px;
     overflow-y: auto;
+}
+
+.left-column {
+    border-right: 1px solid #ddd;
 }
 
 .accordion-item {

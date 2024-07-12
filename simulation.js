@@ -256,6 +256,10 @@ class Car {
         }
     }
 
+    removeMarker() {
+        myLeafletMap.removeLayer(this.marker);
+    }
+
     display() {
         // Visualization handled by marker update
     }
@@ -264,7 +268,6 @@ class Car {
         return this.currentStation === station && !this.moving;
     }
 }
-
 
 class Rider {
     constructor(id, startStation, endStation) {
@@ -349,10 +352,21 @@ function updateAccordion() {
     let accordion = document.getElementById('accordion');
     accordion.innerHTML = '';
 
+    let columnsContainer = document.createElement('div');
+    columnsContainer.style.display = 'flex';
+    columnsContainer.style.width = '100%';
+
     let rideColumn = document.createElement('div');
-    rideColumn.classList.add('column');
+    rideColumn.classList.add('column', 'left-column');
+    rideColumn.style.flex = '1';
+    rideColumn.style.padding = '5px';
+    rideColumn.style.overflowY = 'auto';
+
     let carColumn = document.createElement('div');
-    carColumn.classList.add('column');
+    carColumn.classList.add('column', 'right-column');
+    carColumn.style.flex = '1';
+    carColumn.style.padding = '5px';
+    carColumn.style.overflowY = 'auto';
 
     riders.forEach(rider => {
         if (!rider.arrived) {
@@ -405,9 +419,21 @@ function updateAccordion() {
         carContent.classList.add('accordion-content');
         carContent.style.display = 'block';
 
-        let carInfo = car.moving
-            ? `Car ${car.id} is heading to ${car.destinationStation.name}`
-            : `Car ${car.id} is at ${car.currentStation.name}`;
+        let carInfo;
+        if (car.moving) {
+            if (car.rider) {
+                carInfo = `Car ${car.id} is taking Rider ${car.rider.id} to ${car.destinationStation.name}`;
+            } else {
+                let nextRider = riders.find(rider => rider.startStation === car.destinationStation && !rider.inCar && !rider.arrived);
+                if (nextRider) {
+                    carInfo = `Car ${car.id} is heading to ${car.destinationStation.name} to pick up Rider ${nextRider.id}`;
+                } else {
+                    carInfo = `Car ${car.id} is heading to ${car.destinationStation.name}`;
+                }
+            }
+        } else {
+            carInfo = `Car ${car.id} is at ${car.currentStation.name}`;
+        }
 
         carContent.innerHTML = carInfo;
 
@@ -416,8 +442,9 @@ function updateAccordion() {
         carColumn.appendChild(carDiv);
     });
 
-    accordion.appendChild(rideColumn);
-    accordion.appendChild(carColumn);
+    columnsContainer.appendChild(rideColumn);
+    columnsContainer.appendChild(carColumn);
+    accordion.appendChild(columnsContainer);
 }
 
 function draw() {
@@ -486,17 +513,45 @@ function draw() {
     }
 }
 
+function toggleSimulation() {
+    console.log('Button clicked'); // Debugging log
+    let button = document.getElementById('start-pause-button');
+    if (simulationRunning) {
+        console.log('Pausing simulation'); // Debugging log
+        simulationRunning = false;
+        button.innerText = 'Start';
+        noLoop();
+    } else {
+        console.log('Starting simulation'); // Debugging log
+        simulationRunning = true;
+        button.innerText = 'Pause';
+        loop();
+    }
+}
+
+function resetSimulation() {
+    console.log('Reset button clicked'); // Debugging log
+    simulationRunning = false;
+    startButton.html('Start'); // Use p5.js method to set button text
+    noLoop();
+    initializeSimulation();
+}
+
 function initializeSimulation() {
+    console.log('Initializing simulation'); // Debugging log
+    cars.forEach(car => car.removeMarker()); // Remove existing car markers
     cars = [];
     riders = [];
     currentTime = 0;
-    simulationRunning = true;
+    simulationRunning = false;
 
     // Initialize the first car at the first station
     let startStation1 = stations[0]; 
     cars.push(new Car(0, startStation1));
 
-    // Initialize the second car at station BB
+    // Initialize the second car at station G
     let startStation2 = stations.find(station => station.name === "G");
     cars.push(new Car(1, startStation2));
+
+    updateOverlay(); // Ensure overlay is updated to reflect the reset state
 }

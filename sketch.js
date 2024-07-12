@@ -1,5 +1,6 @@
 let mapWidth = 800, mapHeight = 600;
 let canvas, myLeafletMap;
+let startButton, resetButton;
 
 let predefinedRides = [
     { time: 0, start: "A", end: "Z" },
@@ -8,6 +9,7 @@ let predefinedRides = [
 ];
 
 function setup() {
+    console.log('Setup initialized'); // Debugging log
     frameRate(targetFrameRate);
     canvas = createCanvas(mapWidth, mapHeight);
     canvas.position(0, 0);
@@ -36,6 +38,20 @@ function setup() {
     }
 
     initializeSimulation();
+
+    // Add the start/pause button
+    startButton = createButton('Start');
+    startButton.position(10, 10);
+    startButton.id('start-pause-button');
+    startButton.mousePressed(toggleSimulation);
+    console.log('Start button initialized'); // Debugging log
+
+    // Add the reset button
+    resetButton = createButton('Reset');
+    resetButton.position(10, 50);
+    resetButton.id('reset-button');
+    resetButton.mousePressed(resetSimulation);
+    console.log('Reset button initialized'); // Debugging log
 }
 
 function draw() {
@@ -47,6 +63,7 @@ function draw() {
         if (currentTime >= 720) { // 720 minutes in 12 hours
             simulationRunning = false;
             noLoop();
+            alert(`Simulation complete. Hours simulated: ${(currentTime / 60).toFixed(2)}`);
         }
 
         // Log the current time
