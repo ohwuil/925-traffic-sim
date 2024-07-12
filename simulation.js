@@ -290,23 +290,8 @@ class Rider {
     }
 
     getWaitTime() {
-        return this.endTravelTime !== null ? this.startTravelTime - this.waitStartTime : null;
+        return this.startTravelTime !== null ? this.startTravelTime - this.waitStartTime : currentTime - this.waitStartTime;
     }
-}
-
-function initializeSimulation() {
-    cars = [];
-    riders = [];
-    currentTime = 0;
-    simulationRunning = true;
-
-    // Initialize the first car at the first station
-    let startStation1 = stations[0]; 
-    cars.push(new Car(0, startStation1));
-
-    // Initialize the second car at station BB
-    let startStation2 = stations.find(station => station.name === "G");
-    cars.push(new Car(1, startStation2));
 }
 
 function restartSimulation() {
@@ -327,20 +312,15 @@ function changeStationMarkerColor(station, color) {
 }
 
 function updateOverlay() {
-    let overlay = document.getElementById('overlay');
-    let currentTimeStr = new Date((currentTime + startTime) * 60 * 1000).toISOString().substr(11, 5);
-    let overlayText = `<strong>Current Time:</strong> ${currentTimeStr}<br><strong>Riders:</strong><br>`;
     let totalRideTime = 0;
     let totalWaitTime = 0;
     let totalRides = 0;
     let totalWaits = 0;
 
     for (let rider of riders) {
-        overlayText += `Rider ${rider.id}: `;
         if (rider.arrived) {
             let travelTime = rider.getTravelTime();
             let waitTime = rider.getWaitTime();
-            overlayText += `Arrived at ${rider.endStation.name}. Ride Time: ${travelTime.toFixed(2)} mins, Wait Time: ${waitTime.toFixed(2)} mins<br>`;
             if (travelTime !== null) {
                 totalRideTime += travelTime;
                 totalRides++;
@@ -349,30 +329,174 @@ function updateOverlay() {
                 totalWaitTime += waitTime;
                 totalWaits++;
             }
-        } else if (rider.inCar) {
-            overlayText += `Traveling from ${rider.startStation.name} to ${rider.endStation.name}, traveled ${(currentTime - rider.startTravelTime).toFixed(2)} mins<br>`;
-        } else {
-            overlayText += `Waiting at ${rider.startStation.name} for ${(currentTime - rider.waitStartTime).toFixed(2)} mins<br>`;
         }
     }
 
-    overlayText += `<br><strong>Cars:</strong><br>`;
-    for (let car of cars) {
-        overlayText += `Car ${car.id}: `;
-        if (car.moving) {
-            overlayText += `Traveling from ${car.currentStation.name} to ${car.destinationStation.name}<br>`;
-        } else {
-            overlayText += `At ${car.currentStation.name}<br>`;
+    let averageRideTime = totalRides > 0 ? (totalRideTime / totalRides).toFixed(2) : 'N/A';
+    let averageWaitTime = totalWaits > 0 ? (totalWaitTime / totalWaits).toFixed(2) : 'N/A';
+    let currentTimeStr = new Date((currentTime + startTime) * 60 * 1000).toISOString().substr(11, 5);
+
+    document.getElementById('averageRideTime').innerText = `Average Ride Time: ${averageRideTime} mins`;
+    document.getElementById('averageWaitTime').innerText = `Average Wait Time: ${averageWaitTime} mins`;
+    document.getElementById('totalRiders').innerText = `Total Riders: ${riders.length}`;
+    document.getElementById('totalCars').innerText = `Total Cars: ${cars.length}`;
+    document.getElementById('currentTime').innerText = `Current Time: ${currentTimeStr}`;
+
+    updateAccordion();
+}
+
+function updateAccordion() {
+    let accordion = document.getElementById('accordion');
+    accordion.innerHTML = '';
+
+    let rideColumn = document.createElement('div');
+    rideColumn.classList.add('column');
+    let carColumn = document.createElement('div');
+    carColumn.classList.add('column');
+
+    riders.forEach(rider => {
+        if (!rider.arrived) {
+            let riderDiv = document.createElement('div');
+            riderDiv.classList.add('accordion-item');
+            
+            let riderHeader = document.createElement('h4');
+            riderHeader.innerText = `Rider ${rider.id}`;
+            riderHeader.classList.add('accordion-header');
+            riderHeader.onclick = () => {
+                let content = riderDiv.querySelector('.accordion-content');
+                content.style.display = content.style.display === 'block' ? 'none' : 'block';
+            };
+
+            let riderContent = document.createElement('div');
+            riderContent.classList.add('accordion-content');
+            riderContent.style.display = 'block';
+
+            let waitTime = rider.getWaitTime();
+            let travelTime = rider.inCar ? currentTime - rider.startTravelTime : 0;
+
+            let rideTimeFormatted = new Date(travelTime * 60 * 1000).toISOString().substr(14, 5);
+            let waitTimeFormatted = new Date(waitTime * 60 * 1000).toISOString().substr(14, 5);
+            
+            let rideInfo = rider.inCar
+                ? `Rider ${rider.id} traveling from ${rider.startStation.name} to ${rider.endStation.name}. Ride Time = ${rideTimeFormatted}, Wait Time = ${waitTimeFormatted}`
+                : `Rider ${rider.id} waiting at ${rider.startStation.name}. Wait Time = ${waitTimeFormatted}`;
+
+            riderContent.innerHTML = rideInfo;
+
+            riderDiv.appendChild(riderHeader);
+            riderDiv.appendChild(riderContent);
+            rideColumn.appendChild(riderDiv);
         }
-    }
+    });
 
-    if (totalRides > 0) {
-        overlayText += `<br><strong>Statistics:</strong><br>`;
-        overlayText += `Average Ride Time: ${(totalRideTime / totalRides).toFixed(2)} mins<br>`;
-    }
-    if (totalWaits > 0) {
-        overlayText += `Average Wait Time: ${(totalWaitTime / totalWaits).toFixed(2)} mins<br>`;
-    }
+    cars.forEach(car => {
+        let carDiv = document.createElement('div');
+        carDiv.classList.add('accordion-item');
+        
+        let carHeader = document.createElement('h4');
+        carHeader.innerText = `Car ${car.id}`;
+        carHeader.classList.add('accordion-header');
+        carHeader.onclick = () => {
+            let content = carDiv.querySelector('.accordion-content');
+            content.style.display = content.style.display === 'block' ? 'none' : 'block';
+        };
 
-    overlay.innerHTML = overlayText;
+        let carContent = document.createElement('div');
+        carContent.classList.add('accordion-content');
+        carContent.style.display = 'block';
+
+        let carInfo = car.moving
+            ? `Car ${car.id} is heading to ${car.destinationStation.name}`
+            : `Car ${car.id} is at ${car.currentStation.name}`;
+
+        carContent.innerHTML = carInfo;
+
+        carDiv.appendChild(carHeader);
+        carDiv.appendChild(carContent);
+        carColumn.appendChild(carDiv);
+    });
+
+    accordion.appendChild(rideColumn);
+    accordion.appendChild(carColumn);
+}
+
+function draw() {
+    if (simulationRunning) {
+        clear();
+
+        // Update current time
+        currentTime += timeStep / targetFrameRate;
+        if (currentTime >= 720) { // 720 minutes in 12 hours
+            simulationRunning = false;
+            noLoop();
+            alert(`Simulation complete. Hours simulated: ${(currentTime / 60).toFixed(2)}`);
+        }
+
+        // Log the current time
+        console.log(`Current Time: ${currentTime.toFixed(2)} minutes`);
+
+        // Start predefined rides at the proper simulated times
+        for (let ride of predefinedRides) {
+            if (currentTime >= ride.time && !riders.some(r => r.startStation.name === ride.start && r.endStation.name === ride.end)) {
+                let startStation = stations.find(station => station.name === ride.start);
+                let endStation = stations.find(station => station.name === ride.end);
+                let riderId = riders.length;
+                riders.push(new Rider(riderId, startStation, endStation));
+                console.log(`Starting ride ${riderId} from ${ride.start} to ${ride.end} at time ${ride.time} minutes`);
+                changeStationMarkerColor(startStation, "yellow");
+                changeStationMarkerColor(endStation, "yellow");
+            }
+        }
+
+        // Update and draw cars
+        for (let car of cars) {
+            car.update();
+        }
+
+        // Allocate cars to waiting riders
+        for (let rider of riders) {
+            if (!rider.inCar && !rider.arrived) {
+                let closestCar = null;
+                let minDistance = Infinity;
+                
+                for (let car of cars) {
+                    if (!car.moving) {
+                        let distance = p5.Vector.dist(car.position, mapCoordsToCanvas(rider.startStation.lat, rider.startStation.lon));
+                        if (distance < minDistance) {
+                            closestCar = car;
+                            minDistance = distance;
+                        }
+                    }
+                }
+
+                if (closestCar) {
+                    if (closestCar.hasReachedStation(rider.startStation)) {
+                        closestCar.assignRider(rider);
+                        changeStationMarkerColor(rider.startStation, "red");
+                        changeStationMarkerColor(rider.endStation, "red");
+                    } else {
+                        closestCar.moveTo(rider.startStation);
+                    }
+                }
+            }
+        }
+
+        // Update overlay
+        updateOverlay();
+    }
+}
+
+function initializeSimulation() {
+    cars = [];
+    riders = [];
+    currentTime = 0;
+    simulationRunning = true;
+
+    // Initialize the first car at the first station
+    let startStation1 = stations[0]; 
+    cars.push(new Car(0, startStation1));
+
+    // Initialize the second car at station BB
+    let startStation2 = stations.find(station => station.name === "G");
+    cars.push(new Car(1, startStation2));
 }

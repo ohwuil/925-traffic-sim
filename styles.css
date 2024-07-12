@@ -1,6 +1,7 @@
 body {
     margin: 0;
     padding: 0;
+    font-family: Arial, sans-serif;
 }
 
 #map {
@@ -11,12 +12,53 @@ body {
     height: 100%;
 }
 
-#overlay {
+#summary {
     position: fixed;
-    bottom: 0;
-    left: 0;
+    top: 10px;
+    right: 10px;
     background: rgba(255, 255, 255, 0.8);
     padding: 10px;
     border-radius: 5px;
     z-index: 1000;
+    max-width: 250px;
+    overflow-y: auto;
+}
+
+#overlay {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(255, 255, 255, 0.8);
+    padding: 10px;
+    border-radius: 5px;
+    z-index: 1000;
+    max-height: 200px;
+    overflow-y: auto;
+    font-size: 12px;
+    font-family: Arial, sans-serif;
+    display: flex;
+}
+
+.column {
+    flex: 1;
+    padding: 5px;
+    overflow-y: auto;
+}
+
+.accordion-item {
+    border-bottom: 1px solid #ddd;
+    padding: 5px 0;
+}
+
+.accordion-header {
+    cursor: pointer;
+    font-weight: bold;
+    margin: 0;
+}
+
+.accordion-content {
+    display: none;
+    padding: 5px 0;
+    margin: 0;
 }
