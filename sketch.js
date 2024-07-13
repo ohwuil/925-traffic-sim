@@ -67,7 +67,7 @@ function draw() {
         }
 
         // Log the current time
-        console.log(`Current Time: ${currentTime.toFixed(2)} minutes`);
+        // console.log(`Current Time: ${currentTime.toFixed(2)} minutes`);
 
         // Start predefined rides at the proper simulated times
         for (let ride of predefinedRides) {

@@ -94,6 +94,7 @@ let timeStep = 1.2; // 1.2 minutes per frame to simulate 12 hours in 10 minutes 
 let startTime = 8 * 60; // Start at 8:00 AM
 let simulationRunning = true;
 let targetFrameRate = 60; // Target frame rate in frames per second
+let completedRides = [];
 
 let carIcon = L.icon({
     iconUrl: 'https://maps.google.com/mapfiles/ms/icons/cabs.png',
@@ -238,6 +239,19 @@ class Car {
                         this.rider.inCar = false;
                         this.rider.arrived = true;
                         this.rider.endTravelTime = currentTime;
+                        
+                        // Store completed ride
+                        let completedRide = {
+                            id: this.rider.id,
+                            startStation: this.rider.startStation.name,
+                            endStation: this.rider.endStation.name,
+                            rideStartTime: this.rider.startTravelTime,
+                            rideTime: this.rider.getTravelTime(),
+                            waitTime: this.rider.getWaitTime()
+                        };
+                        completedRides.push(completedRide);
+                        console.log("Completed ride:", completedRide); // Log the completed ride to the console
+
                         this.rider = null;
                     }
 
@@ -459,9 +473,6 @@ function draw() {
             alert(`Simulation complete. Hours simulated: ${(currentTime / 60).toFixed(2)}`);
         }
 
-        // Log the current time
-        console.log(`Current Time: ${currentTime.toFixed(2)} minutes`);
-
         // Start predefined rides at the proper simulated times
         for (let ride of predefinedRides) {
             if (currentTime >= ride.time && !riders.some(r => r.startStation.name === ride.start && r.endStation.name === ride.end)) {
@@ -555,4 +566,27 @@ function initializeSimulation() {
     cars.push(new Car(1, startStation2));
 
     updateOverlay(); // Ensure overlay is updated to reflect the reset state
+}
+
+function showRideDetails() {
+    console.log("Completed Rides:", completedRides); // Log the completed rides array to the console
+
+    let popupWindow = window.open("", "Ride Details", "width=600,height=400");
+    popupWindow.document.write("<html><head><title>Ride Details</title></head><body>");
+    popupWindow.document.write("<h3>Completed Rides</h3>");
+    popupWindow.document.write("<ul>");
+
+    completedRides.forEach(ride => {
+        // Calculate the ride start time based on the simulation starting at 8:00 AM
+        let rideStartTimeInMinutes = ride.rideStartTime + startTime; // Adding startTime (480 minutes) to the ride start time
+        let rideStartDate = new Date(2021, 0, 1, 0, rideStartTimeInMinutes); // Use a fixed date to avoid time zone issues
+        let rideStartTime = rideStartDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+
+        let rideTimeFormatted = new Date(ride.rideTime * 60 * 1000).toISOString().substr(14, 5);
+        let waitTimeFormatted = new Date(ride.waitTime * 60 * 1000).toISOString().substr(14, 5);
+        popupWindow.document.write(`<li>${rideStartTime} - Rider ${ride.id} went from ${ride.startStation} to ${ride.endStation}. Ride time = ${rideTimeFormatted} min, Wait time = ${waitTimeFormatted} min</li>`);
+    });
+
+    popupWindow.document.write("</ul>");
+    popupWindow.document.write("</body></html>");
 }
