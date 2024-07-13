@@ -532,7 +532,8 @@ function toggleSimulation() {
 function resetSimulation() {
     console.log('Reset button clicked'); // Debugging log
     simulationRunning = false;
-    startButton.html('Start'); // Use p5.js method to set button text
+    let button = document.getElementById('start-pause-button');
+    button.innerText = 'Start'; // Use standard JavaScript method to set button text
     noLoop();
     initializeSimulation();
 }
