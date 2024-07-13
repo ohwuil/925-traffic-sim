@@ -26,3 +26,8 @@ This project simulates a personal rapid transit system with self-driving cars, f
 
 ```sh
 npm install
+
+
+##TODO
+- add an option to run simulation(s) without visual sim them giving me the output
+- add a backend to this that serves in html and has endpoints to take in simulation requests and run them
