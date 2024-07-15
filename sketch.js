@@ -2,12 +2,6 @@ let mapWidth = 800, mapHeight = 600;
 let canvas, myLeafletMap;
 let startButton, resetButton;
 
-// let predefinedRides = [
-//     { time: 0, start: "A", end: "Z" },
-//     { time: 1, start: "G", end: "AA" },
-//     { time: 2, start: "BB", end: "AR" }
-// ];
-
 function setup() {
     console.log('Setup initialized'); // Debugging log
     frameRate(targetFrameRate);
