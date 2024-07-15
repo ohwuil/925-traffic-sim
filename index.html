@@ -14,6 +14,10 @@
     <div id="map"></div>
     <div id="summary">
         <h3>Simulation Summary</h3>
+        <label for="startTime">Start Time:</label>
+        <input type="time" id="startTime" value="08:00">
+        <label for="endTime">End Time:</label>
+        <input type="time" id="endTime" value="20:00">
         <p id="averageRideTime">Average Ride Time: N/A</p>
         <p id="averageWaitTime">Average Wait Time: N/A</p>
         <p id="totalRiders">Total Riders: N/A</p>
@@ -22,6 +26,24 @@
         <button id="start-pause-button" onclick="toggleSimulation()">Start</button>
         <button id="reset-button" onclick="resetSimulation()">Reset</button>
         <a href="#" id="ride-details-link" onclick="showRideDetails()">Ride Details</a>
+        <h3>Designate Riders</h3>
+        <div id="riders-setup">
+            <label for="rider-start-time">Start Time:</label>
+            <input type="time" id="rider-start-time">
+            <label for="rider-start-station">Start Station:</label>
+            <select id="rider-start-station"></select>
+            <label for="rider-end-station">End Station:</label>
+            <select id="rider-end-station"></select>
+            <button onclick="addRider()">Add Rider</button>
+            <ul id="riders-list"></ul>
+        </div>
+        <h3>Designate GlydCars</h3>
+        <div id="cars-setup">
+            <label for="car-start-station">Start Station:</label>
+            <select id="car-start-station"></select>
+            <button onclick="addCar()">Add Car</button>
+            <ul id="cars-list"></ul>
+        </div>
     </div>
     <div id="overlay">
         <div id="accordion"></div>

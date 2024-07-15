@@ -95,6 +95,8 @@ let startTime = 8 * 60; // Start at 8:00 AM
 let simulationRunning = true;
 let targetFrameRate = 60; // Target frame rate in frames per second
 let completedRides = [];
+let predefinedRides = [];
+let endTime = 20 * 60; // Default end time in minutes
 
 let carIcon = L.icon({
     iconUrl: 'https://maps.google.com/mapfiles/ms/icons/cabs.png',
@@ -123,6 +125,57 @@ let yellowMarkerIcon = L.icon({
     iconAnchor: [16, 32],
     popupAnchor: [0, -32]
 });
+
+document.addEventListener("DOMContentLoaded", () => {
+    // Populate station dropdowns
+    let stationOptions = stations.map(station => `<option value="${station.name}">${station.name}</option>`).join('');
+    document.getElementById("rider-start-station").innerHTML = stationOptions;
+    document.getElementById("rider-end-station").innerHTML = stationOptions;
+    document.getElementById("car-start-station").innerHTML = stationOptions;
+
+    // Event listeners for time inputs
+    document.getElementById("startTime").addEventListener("change", (event) => {
+        let timeParts = event.target.value.split(':');
+        startTime = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
+    });
+
+    document.getElementById("endTime").addEventListener("change", (event) => {
+        let timeParts = event.target.value.split(':');
+        endTime = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]);
+    });
+});
+
+function addRider() {
+    let riderStartTime = document.getElementById("rider-start-time").value;
+    let riderStartStation = document.getElementById("rider-start-station").value;
+    let riderEndStation = document.getElementById("rider-end-station").value;
+    let timeParts = riderStartTime.split(':');
+    let rideTime = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]) - startTime;
+
+    predefinedRides.push({
+        time: rideTime,
+        start: riderStartStation,
+        end: riderEndStation
+    });
+
+    let riderList = document.getElementById("riders-list");
+    let riderItem = document.createElement("li");
+    riderItem.textContent = `Start Time: ${riderStartTime}, From: ${riderStartStation}, To: ${riderEndStation}`;
+    riderList.appendChild(riderItem);
+}
+
+function addCar() {
+    let carStartStation = document.getElementById("car-start-station").value;
+    let startStation = stations.find(station => station.name === carStartStation);
+    let carId = cars.length;
+
+    cars.push(new Car(carId, startStation));
+
+    let carList = document.getElementById("cars-list");
+    let carItem = document.createElement("li");
+    carItem.textContent = `Car ${carId} starts at ${carStartStation}`;
+    carList.appendChild(carItem);
+}
 
 class Car {
     constructor(id, startStation) {
@@ -557,17 +610,33 @@ function initializeSimulation() {
     currentTime = 0;
     simulationRunning = false;
 
-    // Initialize the first car at the first station
-    let startStation1 = stations[0]; 
-    cars.push(new Car(0, startStation1));
+    // Initialize cars at designated start stations
+    let carList = document.getElementById("cars-list").children;
+    for (let carItem of carList) {
+        let startStationName = carItem.textContent.split('starts at ')[1];
+        let startStation = stations.find(station => station.name === startStationName);
+        let carId = cars.length;
+        cars.push(new Car(carId, startStation));
+    }
 
-    // Initialize the second car at station G
-    let startStation2 = stations.find(station => station.name === "G");
-    cars.push(new Car(1, startStation2));
+    // Set up predefined rides
+    let riderList = document.getElementById("riders-list").children;
+    for (let riderItem of riderList) {
+        let parts = riderItem.textContent.split(',');
+        let startTime = parts[0].split('Start Time: ')[1];
+        let startStation = parts[1].split('From: ')[1].trim();
+        let endStation = parts[2].split('To: ')[1].trim();
+        let timeParts = startTime.split(':');
+        let rideTime = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]) - startTime;
+        predefinedRides.push({
+            time: rideTime,
+            start: startStation,
+            end: endStation
+        });
+    }
 
     updateOverlay(); // Ensure overlay is updated to reflect the reset state
 }
-
 function showRideDetails() {
     console.log("Completed Rides:", completedRides); // Log the completed rides array to the console
 
