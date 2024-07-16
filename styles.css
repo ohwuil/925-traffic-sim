@@ -70,3 +70,27 @@ body {
     margin: 0;
 }
 
+body.dark-mode {
+    background-color: #121212;
+    color: #ffffff;
+}
+
+#summary.dark-mode {
+    background: rgba(50, 50, 50, 0.8);
+}
+
+#overlay.dark-mode {
+    background: rgba(50, 50, 50, 0.8);
+}
+
+.dark-mode #map:before {
+    content: 'Dark Mode';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 3em;
+    color: rgba(255, 255, 255, 0.8);
+    z-index: 1001;
+    pointer-events: none;
+}

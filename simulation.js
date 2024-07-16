@@ -92,11 +92,13 @@ let numCars = 1;
 let currentTime = 0; // in minutes, 0 to 720 for 12 hours (8am to 8pm)
 let timeStep = 1.2; // 1.2 minutes per frame to simulate 12 hours in 10 minutes of real time
 let startTime = 8 * 60; // Start at 8:00 AM
-let simulationRunning = true;
 let targetFrameRate = 60; // Target frame rate in frames per second
 let completedRides = [];
 let predefinedRides = [];
 let endTime = 20 * 60; // Default end time in minutes
+let isDarkMode = false;
+let simulationRunning = false;
+let darkModeRunning = false;
 
 let carIcon = L.icon({
     iconUrl: 'https://maps.google.com/mapfiles/ms/icons/cabs.png',
@@ -515,7 +517,7 @@ function updateAccordion() {
 }
 
 function draw() {
-    if (simulationRunning) {
+    if (simulationRunning && !darkModeRunning) {
         clear();
 
         // Update current time
@@ -578,18 +580,19 @@ function draw() {
 }
 
 function toggleSimulation() {
-    console.log('Button clicked'); // Debugging log
     let button = document.getElementById('start-pause-button');
     if (simulationRunning) {
-        console.log('Pausing simulation'); // Debugging log
         simulationRunning = false;
         button.innerText = 'Start';
         noLoop();
     } else {
-        console.log('Starting simulation'); // Debugging log
         simulationRunning = true;
         button.innerText = 'Pause';
-        loop();
+        if (!isDarkMode) {
+            loop();
+        } else {
+            runDarkModeSimulation();
+        }
     }
 }
 
@@ -658,4 +661,79 @@ function showRideDetails() {
 
     popupWindow.document.write("</ul>");
     popupWindow.document.write("</body></html>");
+}
+
+function toggleDarkMode() {
+    isDarkMode = !isDarkMode;
+    document.body.classList.toggle('dark-mode', isDarkMode);
+    document.getElementById('summary').classList.toggle('dark-mode', isDarkMode);
+    document.getElementById('overlay').classList.toggle('dark-mode', isDarkMode);
+    
+    if (isDarkMode) {
+        darkModeRunning = true;
+        noLoop(); // Stop drawing the map
+        runDarkModeSimulation(); // Run the simulation without visual updates
+    } else {
+        darkModeRunning = false;
+        loop(); // Resume drawing the map
+    }
+}
+function runDarkModeSimulation() {
+    if (darkModeRunning) {
+        // Fast-forward simulation logic without visual updates
+        while (simulationRunning) {
+            // Update current time
+            currentTime += timeStep / targetFrameRate;
+            if (currentTime >= 720) { // 720 minutes in 12 hours
+                simulationRunning = false;
+                updateOverlay(); // Update the overlay with final results
+                alert(`Dark Mode simulation complete. Hours simulated: ${(currentTime / 60).toFixed(2)}`);
+                break;
+            }
+
+            // Start predefined rides at the proper simulated times
+            for (let ride of predefinedRides) {
+                if (currentTime >= ride.time && !riders.some(r => r.startStation.name === ride.start && r.endStation.name === ride.end)) {
+                    let startStation = stations.find(station => station.name === ride.start);
+                    let endStation = stations.find(station => station.name === ride.end);
+                    let riderId = riders.length;
+                    riders.push(new Rider(riderId, startStation, endStation));
+                }
+            }
+
+            // Update and draw cars
+            for (let car of cars) {
+                car.update();
+            }
+
+            // Allocate cars to waiting riders
+            for (let rider of riders) {
+                if (!rider.inCar && !rider.arrived) {
+                    let closestCar = null;
+                    let minDistance = Infinity;
+                    
+                    for (let car of cars) {
+                        if (!car.moving) {
+                            let distance = p5.Vector.dist(car.position, mapCoordsToCanvas(rider.startStation.lat, rider.startStation.lon));
+                            if (distance < minDistance) {
+                                closestCar = car;
+                                minDistance = distance;
+                            }
+                        }
+                    }
+
+                    if (closestCar) {
+                        if (closestCar.hasReachedStation(rider.startStation)) {
+                            closestCar.assignRider(rider);
+                        } else {
+                            closestCar.moveTo(rider.startStation);
+                        }
+                    }
+                }
+            }
+
+            // Update overlay
+            updateOverlay();
+        }
+    }
 }
