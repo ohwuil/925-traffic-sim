@@ -49,7 +49,7 @@ function setup() {
 }
 
 function draw() {
-    if (simulationRunning) {
+    if (simulationRunning && !darkModeRunning) {
         clear();
 
         // Update current time
@@ -60,19 +60,36 @@ function draw() {
             alert(`Simulation complete. Hours simulated: ${(currentTime / 60).toFixed(2)}`);
         }
 
-        // Log the current time
-        // console.log(`Current Time: ${currentTime.toFixed(2)} minutes`);
-
         // Start predefined rides at the proper simulated times
         for (let ride of predefinedRides) {
-            if (currentTime >= ride.time && !riders.some(r => r.startStation.name === ride.start && r.endStation.name === ride.end)) {
+            if (currentTime >= ride.time && !riders.some(r => r.startStation.name === ride.start && r.endStation.name === ride.end && r.name === ride.name)) {
                 let startStation = stations.find(station => station.name === ride.start);
                 let endStation = stations.find(station => station.name === ride.end);
                 let riderId = riders.length;
-                riders.push(new Rider(riderId, startStation, endStation));
-                console.log(`Starting ride ${riderId} from ${ride.start} to ${ride.end} at time ${ride.time} minutes`);
-                changeStationMarkerColor(startStation, "yellow");
-                changeStationMarkerColor(endStation, "yellow");
+                let rider = new Rider(riderId, ride.name, startStation, endStation);
+                
+                if (ride.start === ride.end) { // Instant completion for rides with same start and end station
+                    rider.arrived = true;
+                    rider.startTravelTime = currentTime;
+                    rider.endTravelTime = currentTime;
+                    let completedRide = {
+                        id: rider.id,
+                        name: rider.name,
+                        startStation: rider.startStation.name,
+                        endStation: rider.endStation.name,
+                        rideStartTime: rider.startTravelTime,
+                        rideTime: rider.getTravelTime(),
+                        waitTime: rider.getWaitTime(),
+                        carId: null // No car used for instant completion
+                    };
+                    completedRides.push(completedRide);
+                    console.log("Completed ride:", completedRide); // Log the completed ride to the console
+                } else {
+                    riders.push(rider);
+                    console.log(`Starting ride ${riderId} from ${ride.start} to ${ride.end} at time ${ride.time} minutes`);
+                    changeStationMarkerColor(startStation, "yellow");
+                    changeStationMarkerColor(endStation, "yellow");
+                }
             }
         }
 
@@ -86,9 +103,16 @@ function draw() {
             if (!rider.inCar && !rider.arrived) {
                 let closestCar = null;
                 let minDistance = Infinity;
-                
+                let waitingRiders = riders.filter(r => r.startStation.name === rider.startStation.name && !r.inCar && !r.arrived);
+
+                // Shuffle the array to randomly choose the order
+                for (let i = waitingRiders.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [waitingRiders[i], waitingRiders[j]] = [waitingRiders[j], waitingRiders[i]];
+                }
+
                 for (let car of cars) {
-                    if (!car.moving) {
+                    if (!car.moving && car.waitTime <= 0) {
                         let distance = p5.Vector.dist(car.position, mapCoordsToCanvas(rider.startStation.lat, rider.startStation.lon));
                         if (distance < minDistance) {
                             closestCar = car;
@@ -98,12 +122,15 @@ function draw() {
                 }
 
                 if (closestCar) {
-                    if (closestCar.hasReachedStation(rider.startStation)) {
-                        closestCar.assignRider(rider);
-                        changeStationMarkerColor(rider.startStation, "red");
-                        changeStationMarkerColor(rider.endStation, "red");
-                    } else {
-                        closestCar.moveTo(rider.startStation);
+                    for (let waitingRider of waitingRiders) {
+                        if (closestCar.hasReachedStation(waitingRider.startStation)) {
+                            closestCar.assignRider(waitingRider);
+                            changeStationMarkerColor(waitingRider.startStation, "red");
+                            changeStationMarkerColor(waitingRider.endStation, "red");
+                            break;
+                        } else {
+                            closestCar.moveTo(waitingRider.startStation);
+                        }
                     }
                 }
             }

@@ -99,32 +99,34 @@ let endTime = 20 * 60; // Default end time in minutes
 let isDarkMode = false;
 let simulationRunning = false;
 let darkModeRunning = false;
+let riderCount = 0; // Add a rider count to assign unique names
+
 
 let carIcon = L.icon({
     iconUrl: 'https://maps.google.com/mapfiles/ms/icons/cabs.png',
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
+    iconSize: [16, 16], // Reduced size by 50%
+    iconAnchor: [8, 16],
     popupAnchor: [0, -32]
 });
 
 let blueMarkerIcon = L.icon({
     iconUrl: 'https://maps.google.com/mapfiles/ms/icons/blue-dot.png',
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
+    iconSize: [16, 16], // Reduced size by 50%
+    iconAnchor: [8, 16],
     popupAnchor: [0, -32]
 });
 
 let redMarkerIcon = L.icon({
     iconUrl: 'https://maps.google.com/mapfiles/ms/icons/red-dot.png',
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
+    iconSize: [16, 16], // Reduced size by 50%
+    iconAnchor: [8, 16],
     popupAnchor: [0, -32]
 });
 
 let yellowMarkerIcon = L.icon({
     iconUrl: 'https://maps.google.com/mapfiles/ms/icons/yellow-dot.png',
-    iconSize: [32, 32],
-    iconAnchor: [16, 32],
+    iconSize: [16, 16], // Reduced size by 50%
+    iconAnchor: [8, 16],
     popupAnchor: [0, -32]
 });
 
@@ -155,6 +157,7 @@ function addRider() {
     let rideTime = parseInt(timeParts[0]) * 60 + parseInt(timeParts[1]) - startTime;
 
     predefinedRides.push({
+        name: `Rider ${riderCount}`,
         time: rideTime,
         start: riderStartStation,
         end: riderEndStation
@@ -162,8 +165,9 @@ function addRider() {
 
     let riderList = document.getElementById("riders-list");
     let riderItem = document.createElement("li");
-    riderItem.textContent = `Start Time: ${riderStartTime}, From: ${riderStartStation}, To: ${riderEndStation}`;
+    riderItem.textContent = `Rider ${riderCount}: Start Time: ${riderStartTime}, From: ${riderStartStation}, To: ${riderEndStation}`;
     riderList.appendChild(riderItem);
+    riderCount++;
 }
 
 function addCar() {
@@ -192,11 +196,13 @@ class Car {
         this.marker = L.marker(mapCoordsToLatLng(this.position), { icon: carIcon }).addTo(myLeafletMap);
         this.path = [];
         this.pathIndex = 0;
+        this.waitTime = 0; // Add waitTime property
     }
 
     assignRider(rider) {
         console.log(`Assigning rider ${rider.id} to car ${this.id}`);
         this.rider = rider;
+        rider.carId = this.id; // Store the car ID with the rider
         this.destinationStation = rider.endStation;
         rider.inCar = true;
         rider.startTravelTime = currentTime; // Track the start of the travel time
@@ -267,6 +273,11 @@ class Car {
     }
 
     update() {
+        if (this.waitTime > 0) {
+            this.waitTime--;
+            return;
+        }
+
         if (this.moving && this.path.length > 0) {
             let nextPos = this.path[this.pathIndex + 1];
             if (!nextPos) {
@@ -298,30 +309,39 @@ class Car {
                         // Store completed ride
                         let completedRide = {
                             id: this.rider.id,
+                            name: this.rider.name,
                             startStation: this.rider.startStation.name,
                             endStation: this.rider.endStation.name,
                             rideStartTime: this.rider.startTravelTime,
-                            rideTime: this.rider.getTravelTime(),
-                            waitTime: this.rider.getWaitTime()
+                            rideTime: this.rider.getTravelTime(), // Do not add 3 minutes to ride time
+                            waitTime: this.rider.getWaitTime(),
+                            carId: this.id // Add car ID to completed ride
                         };
                         completedRides.push(completedRide);
                         console.log("Completed ride:", completedRide); // Log the completed ride to the console
 
                         this.rider = null;
+                        this.waitTime = 3 * targetFrameRate / timeStep; // Set wait time in frames
                     }
 
-                    // Check for next rider after completing current ride
-                    let nextRider = riders.find(rider => !rider.inCar && rider.startStation === this.currentStation && !rider.arrived);
-                    if (nextRider) {
-                        this.assignRider(nextRider);
-                        changeStationMarkerColor(nextRider.startStation, "red");
-                        changeStationMarkerColor(nextRider.endStation, "red");
+                    // Check for next rider after completing current ride if wait time is zero
+                    if (this.waitTime <= 0) {
+                        let nextRider = riders.find(rider => !rider.inCar && rider.startStation === this.currentStation && !rider.arrived);
+                        if (nextRider) {
+                            this.assignRider(nextRider);
+                            changeStationMarkerColor(nextRider.startStation, "red");
+                            changeStationMarkerColor(nextRider.endStation, "red");
+                        }
                     }
                 }
             } else {
                 this.position.add(this.direction);
                 this.marker.setLatLng(mapCoordsToLatLng(this.position));
             }
+        }
+
+        if (this.waitTime > 0) {
+            this.waitTime--;
         }
     }
 
@@ -334,13 +354,14 @@ class Car {
     }
 
     hasReachedStation(station) {
-        return this.currentStation === station && !this.moving;
+        return this.currentStation === station && !this.moving && this.waitTime <= 0;
     }
 }
 
 class Rider {
-    constructor(id, startStation, endStation) {
+    constructor(id, name, startStation, endStation) {
         this.id = id;
+        this.name = name;
         this.startStation = startStation;
         this.endStation = endStation;
         this.inCar = false;
@@ -349,6 +370,7 @@ class Rider {
         this.waitStartTime = currentTime;
         this.startTravelTime = null;
         this.endTravelTime = null;
+        this.carId = null; // Add carId property to Rider
     }
 
     update() {
@@ -404,12 +426,12 @@ function updateOverlay() {
         }
     }
 
-    let averageRideTime = totalRides > 0 ? (totalRideTime / totalRides).toFixed(2) : 'N/A';
-    let averageWaitTime = totalWaits > 0 ? (totalWaitTime / totalWaits).toFixed(2) : 'N/A';
+    let averageRideTime = totalRides > 0 ? formatTime(totalRideTime / totalRides) : 'N/A';
+    let averageWaitTime = totalWaits > 0 ? formatTime(totalWaitTime / totalWaits) : 'N/A';
     let currentTimeStr = new Date((currentTime + startTime) * 60 * 1000).toISOString().substr(11, 5);
 
-    document.getElementById('averageRideTime').innerText = `Average Ride Time: ${averageRideTime} mins`;
-    document.getElementById('averageWaitTime').innerText = `Average Wait Time: ${averageWaitTime} mins`;
+    document.getElementById('averageRideTime').innerText = `Average Ride Time: ${averageRideTime}`;
+    document.getElementById('averageWaitTime').innerText = `Average Wait Time: ${averageWaitTime}`;
     document.getElementById('totalRiders').innerText = `Total Riders: ${riders.length}`;
     document.getElementById('totalCars').innerText = `Total Cars: ${cars.length}`;
     document.getElementById('currentTime').innerText = `Current Time: ${currentTimeStr}`;
@@ -457,8 +479,8 @@ function updateAccordion() {
             let waitTime = rider.getWaitTime();
             let travelTime = rider.inCar ? currentTime - rider.startTravelTime : 0;
 
-            let rideTimeFormatted = new Date(travelTime * 60 * 1000).toISOString().substr(14, 5);
-            let waitTimeFormatted = new Date(waitTime * 60 * 1000).toISOString().substr(14, 5);
+            let rideTimeFormatted = formatTime(travelTime);
+            let waitTimeFormatted = formatTime(waitTime);
             
             let rideInfo = rider.inCar
                 ? `Rider ${rider.id} traveling from ${rider.startStation.name} to ${rider.endStation.name}. Ride Time = ${rideTimeFormatted}, Wait Time = ${waitTimeFormatted}`
@@ -500,6 +522,8 @@ function updateAccordion() {
                     carInfo = `Car ${car.id} is heading to ${car.destinationStation.name}`;
                 }
             }
+        } else if (car.waitTime > 0) {
+            carInfo = `Car ${car.id} is waiting for the rider to exit at ${car.currentStation.name}`;
         } else {
             carInfo = `Car ${car.id} is at ${car.currentStation.name}`;
         }
@@ -516,6 +540,13 @@ function updateAccordion() {
     accordion.appendChild(columnsContainer);
 }
 
+function formatTime(time) {
+    if (time < 1) {
+        return `${(time * 60).toFixed(0)} sec`;
+    }
+    return `${time.toFixed(2)} min`;
+}
+
 function draw() {
     if (simulationRunning && !darkModeRunning) {
         clear();
@@ -530,14 +561,34 @@ function draw() {
 
         // Start predefined rides at the proper simulated times
         for (let ride of predefinedRides) {
-            if (currentTime >= ride.time && !riders.some(r => r.startStation.name === ride.start && r.endStation.name === ride.end)) {
+            if (currentTime >= ride.time && !riders.some(r => r.startStation.name === ride.start && r.endStation.name === ride.end && r.name === ride.name)) {
                 let startStation = stations.find(station => station.name === ride.start);
                 let endStation = stations.find(station => station.name === ride.end);
                 let riderId = riders.length;
-                riders.push(new Rider(riderId, startStation, endStation));
-                console.log(`Starting ride ${riderId} from ${ride.start} to ${ride.end} at time ${ride.time} minutes`);
-                changeStationMarkerColor(startStation, "yellow");
-                changeStationMarkerColor(endStation, "yellow");
+                let rider = new Rider(riderId, ride.name, startStation, endStation);
+                
+                if (ride.start === ride.end) { // Instant completion for rides with same start and end station
+                    rider.arrived = true;
+                    rider.startTravelTime = currentTime;
+                    rider.endTravelTime = currentTime;
+                    let completedRide = {
+                        id: rider.id,
+                        name: rider.name,
+                        startStation: rider.startStation.name,
+                        endStation: rider.endStation.name,
+                        rideStartTime: rider.startTravelTime,
+                        rideTime: rider.getTravelTime(),
+                        waitTime: rider.getWaitTime(),
+                        carId: null // No car used for instant completion
+                    };
+                    completedRides.push(completedRide);
+                    console.log("Completed ride:", completedRide); // Log the completed ride to the console
+                } else {
+                    riders.push(rider);
+                    console.log(`Starting ride ${riderId} from ${ride.start} to ${ride.end} at time ${ride.time} minutes`);
+                    changeStationMarkerColor(startStation, "yellow");
+                    changeStationMarkerColor(endStation, "yellow");
+                }
             }
         }
 
@@ -551,9 +602,16 @@ function draw() {
             if (!rider.inCar && !rider.arrived) {
                 let closestCar = null;
                 let minDistance = Infinity;
-                
+                let waitingRiders = riders.filter(r => r.startStation.name === rider.startStation.name && !r.inCar && !r.arrived);
+
+                // Shuffle the array to randomly choose the order
+                for (let i = waitingRiders.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [waitingRiders[i], waitingRiders[j]] = [waitingRiders[j], waitingRiders[i]];
+                }
+
                 for (let car of cars) {
-                    if (!car.moving) {
+                    if (!car.moving && car.waitTime <= 0) {
                         let distance = p5.Vector.dist(car.position, mapCoordsToCanvas(rider.startStation.lat, rider.startStation.lon));
                         if (distance < minDistance) {
                             closestCar = car;
@@ -563,12 +621,15 @@ function draw() {
                 }
 
                 if (closestCar) {
-                    if (closestCar.hasReachedStation(rider.startStation)) {
-                        closestCar.assignRider(rider);
-                        changeStationMarkerColor(rider.startStation, "red");
-                        changeStationMarkerColor(rider.endStation, "red");
-                    } else {
-                        closestCar.moveTo(rider.startStation);
+                    for (let waitingRider of waitingRiders) {
+                        if (closestCar.hasReachedStation(waitingRider.startStation)) {
+                            closestCar.assignRider(waitingRider);
+                            changeStationMarkerColor(waitingRider.startStation, "red");
+                            changeStationMarkerColor(waitingRider.endStation, "red");
+                            break;
+                        } else {
+                            closestCar.moveTo(waitingRider.startStation);
+                        }
                     }
                 }
             }
@@ -640,6 +701,7 @@ function initializeSimulation() {
 
     updateOverlay(); // Ensure overlay is updated to reflect the reset state
 }
+
 function showRideDetails() {
     console.log("Completed Rides:", completedRides); // Log the completed rides array to the console
 
@@ -654,9 +716,9 @@ function showRideDetails() {
         let rideStartDate = new Date(2021, 0, 1, 0, rideStartTimeInMinutes); // Use a fixed date to avoid time zone issues
         let rideStartTime = rideStartDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-        let rideTimeFormatted = new Date(ride.rideTime * 60 * 1000).toISOString().substr(14, 5);
-        let waitTimeFormatted = new Date(ride.waitTime * 60 * 1000).toISOString().substr(14, 5);
-        popupWindow.document.write(`<li>${rideStartTime} - Rider ${ride.id} went from ${ride.startStation} to ${ride.endStation}. Ride time = ${rideTimeFormatted} min, Wait time = ${waitTimeFormatted} min</li>`);
+        let rideTimeFormatted = formatTime(ride.rideTime); // Do not include the 3-minute wait in ride time
+        let waitTimeFormatted = formatTime(ride.waitTime);
+        popupWindow.document.write(`<li>${rideStartTime} - ${ride.name} went from ${ride.startStation} to ${ride.endStation} using Car ${ride.carId}. Ride time = ${rideTimeFormatted}, Wait time = ${waitTimeFormatted}</li>`);
     });
 
     popupWindow.document.write("</ul>");
@@ -671,13 +733,17 @@ function toggleDarkMode() {
     
     if (isDarkMode) {
         darkModeRunning = true;
+        simulationRunning = false; // Stop simulation when dark mode is activated
         noLoop(); // Stop drawing the map
         runDarkModeSimulation(); // Run the simulation without visual updates
     } else {
         darkModeRunning = false;
-        loop(); // Resume drawing the map
+        noLoop(); // Ensure the map does not draw automatically
+        simulationRunning = false;
+        document.getElementById('start-pause-button').innerText = 'Start'; // Ensure the button text is set to "Start"
     }
 }
+
 function runDarkModeSimulation() {
     if (darkModeRunning) {
         // Fast-forward simulation logic without visual updates
@@ -688,16 +754,40 @@ function runDarkModeSimulation() {
                 simulationRunning = false;
                 updateOverlay(); // Update the overlay with final results
                 alert(`Dark Mode simulation complete. Hours simulated: ${(currentTime / 60).toFixed(2)}`);
+                document.getElementById('start-pause-button').innerText = 'Start'; // Ensure the button text is set to "Start"
                 break;
             }
 
             // Start predefined rides at the proper simulated times
             for (let ride of predefinedRides) {
-                if (currentTime >= ride.time && !riders.some(r => r.startStation.name === ride.start && r.endStation.name === ride.end)) {
+                if (currentTime >= ride.time && !riders.some(r => r.startStation.name === ride.start && r.endStation.name === ride.end && r.name === ride.name)) {
                     let startStation = stations.find(station => station.name === ride.start);
                     let endStation = stations.find(station => station.name === ride.end);
                     let riderId = riders.length;
-                    riders.push(new Rider(riderId, startStation, endStation));
+                    let rider = new Rider(riderId, ride.name, startStation, endStation);
+                    
+                    if (ride.start === ride.end) { // Instant completion for rides with same start and end station
+                        rider.arrived = true;
+                        rider.startTravelTime = currentTime;
+                        rider.endTravelTime = currentTime;
+                        let completedRide = {
+                            id: rider.id,
+                            name: rider.name,
+                            startStation: rider.startStation.name,
+                            endStation: rider.endStation.name,
+                            rideStartTime: rider.startTravelTime,
+                            rideTime: rider.getTravelTime(),
+                            waitTime: rider.getWaitTime(),
+                            carId: null // No car used for instant completion
+                        };
+                        completedRides.push(completedRide);
+                        console.log("Completed ride:", completedRide); // Log the completed ride to the console
+                    } else {
+                        riders.push(rider);
+                        console.log(`Starting ride ${riderId} from ${ride.start} to ${ride.end} at time ${ride.time} minutes`);
+                        changeStationMarkerColor(startStation, "yellow");
+                        changeStationMarkerColor(endStation, "yellow");
+                    }
                 }
             }
 
@@ -711,7 +801,14 @@ function runDarkModeSimulation() {
                 if (!rider.inCar && !rider.arrived) {
                     let closestCar = null;
                     let minDistance = Infinity;
-                    
+                    let waitingRiders = riders.filter(r => r.startStation.name === rider.startStation.name && !r.inCar && !r.arrived);
+
+                    // Shuffle the array to randomly choose the order
+                    for (let i = waitingRiders.length - 1; i > 0; i--) {
+                        const j = Math.floor(Math.random() * (i + 1));
+                        [waitingRiders[i], waitingRiders[j]] = [waitingRiders[j], waitingRiders[i]];
+                    }
+
                     for (let car of cars) {
                         if (!car.moving) {
                             let distance = p5.Vector.dist(car.position, mapCoordsToCanvas(rider.startStation.lat, rider.startStation.lon));
@@ -723,10 +820,15 @@ function runDarkModeSimulation() {
                     }
 
                     if (closestCar) {
-                        if (closestCar.hasReachedStation(rider.startStation)) {
-                            closestCar.assignRider(rider);
-                        } else {
-                            closestCar.moveTo(rider.startStation);
+                        for (let waitingRider of waitingRiders) {
+                            if (closestCar.hasReachedStation(waitingRider.startStation)) {
+                                closestCar.assignRider(waitingRider);
+                                changeStationMarkerColor(waitingRider.startStation, "red");
+                                changeStationMarkerColor(waitingRider.endStation, "red");
+                                break;
+                            } else {
+                                closestCar.moveTo(waitingRider.startStation);
+                            }
                         }
                     }
                 }
